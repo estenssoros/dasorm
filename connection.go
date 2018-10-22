@@ -1,4 +1,4 @@
-package db
+package dasorm
 
 import (
 	"context"

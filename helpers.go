@@ -1,4 +1,4 @@
-package db
+package dasorm
 
 import (
 	"fmt"
@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/estenssoros/dasorm/nulls"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
-	"github.com/seaspancode/ahab/db/nulls"
 )
 
 // EscapeString replaces error causing characters in  a string
