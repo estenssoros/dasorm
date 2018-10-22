@@ -44,6 +44,10 @@ func connectDB(server string) (*Connection, error) {
 	}
 }
 
+func (c *Connection) Ping() error {
+	return c.DB.Ping()
+}
+
 // ConnectDB connects to a database environment
 func ConnectDB(server string) (*Connection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
