@@ -97,3 +97,42 @@ func getConfigVault(environment string) (*Config, error) {
 	}
 	return config, nil
 }
+
+//AWSCreds stores the creds for an aws user
+type AWSCreds struct {
+	ID  string
+	Key string
+}
+
+//GetAWSCreds returns the creds for logging
+func GetAWSCreds(service string) *AWSCreds {
+	client, err := connectVault()
+	if err != nil {
+		panic(err)
+	}
+
+	secrets, err := client.Logical().Read(fmt.Sprintf("secret/data/%s", service))
+	if err != nil {
+		panic(err)
+	}
+
+	if secrets == nil {
+		panic(fmt.Errorf("vault errror: no data at: %s", service))
+	}
+
+	secret := secrets.Data["data"].(map[string]interface{})
+
+	creds := &AWSCreds{}
+	if val, ok := secret["aws_id"]; !ok {
+		panic(errors.New("Could not locate aws credentials"))
+	} else {
+		creds.ID = val.(string)
+	}
+	if val, ok := secret["aws_key"]; !ok {
+		panic(errors.New("Could not locate aws credentials"))
+	} else {
+		creds.Key = val.(string)
+	}
+
+	return creds
+}
