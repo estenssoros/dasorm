@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/estenssoros/dasorm/nulls"
+	interpol "github.com/imkira/go-interpol"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 )
@@ -218,4 +219,94 @@ func ToSnakeCase(str string) string {
 	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
+}
+
+type table interface {
+	TableName() string
+}
+
+// InsertStmt creates insert statement from struct tags
+func InsertStmt(t table) string {
+	structValue := reflect.ValueOf(t)
+	structType := structValue.Type()
+
+	stmt := "INSERT INTO `%s` (%s) VALUES "
+
+	numFields := structValue.NumField()
+	cols := make([]string, numFields)
+
+	for i := 0; i < numFields; i++ {
+		f := structType.Field(i)
+		colName := f.Tag.Get("db")
+		if colName == "" {
+			cols[i] = fmt.Sprintf("`%s`", ToSnakeCase(f.Name))
+		} else {
+			cols[i] = fmt.Sprintf("`%s`", colName)
+		}
+	}
+	return fmt.Sprintf(stmt, t.TableName(), strings.Join(cols, ","))
+}
+
+// TruncateStmt return the truncate statement for a table
+func TruncateStmt(t table) string {
+	return fmt.Sprintf("TRUNCATE TABLE %s", t.TableName())
+}
+
+// Scanner returns an slice of interface to a struct
+// rows.Scan(seaspandb.Scanner(&m)...)
+func Scanner(u interface{}) []interface{} {
+	val := reflect.ValueOf(u).Elem()
+	typ := val.Type()
+	v := []interface{}{}
+	for i := 0; i < val.NumField(); i++ {
+		typeField := typ.Field(i)
+		if typeField.Tag.Get("db") == "" {
+			continue
+		}
+		valueField := val.Field(i)
+		v = append(v, valueField.Addr().Interface())
+	}
+	return v
+}
+
+// CSVHeaders creates a slice of headers from a struct
+func CSVHeaders(c interface{}) []string {
+	structValue := reflect.ValueOf(c)
+	structType := structValue.Type()
+	numFields := structValue.NumField()
+	cols := make([]string, numFields)
+	for i := 0; i < numFields; i++ {
+		f := structType.Field(i)
+		cols[i] = f.Tag.Get("db")
+	}
+	return cols
+}
+
+func MustFormatMap(s string, m map[string]string) string {
+	s, err := interpol.WithMap(s, m)
+	if err != nil {
+		panic(err)
+	}
+	return s
+}
+
+// InsertIgnore crafts insert ignore statement fro mstruct tags
+func InsertIgnore(t table) string {
+	structValue := reflect.ValueOf(t)
+	structType := structValue.Type()
+
+	stmt := "INSERT IGNORE INTO `%s` (%s) VALUES "
+
+	numFields := structValue.NumField()
+	cols := make([]string, numFields)
+
+	for i := 0; i < numFields; i++ {
+		f := structType.Field(i)
+		colName := f.Tag.Get("db")
+		if colName == "" {
+			colName = ToSnakeCase(f.Name)
+		}
+		cols[i] = fmt.Sprintf("`%s`", colName)
+	}
+	return fmt.Sprintf(stmt, t.TableName(), strings.Join(cols, ","))
 }

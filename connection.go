@@ -2,6 +2,7 @@ package dasorm
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -74,4 +75,19 @@ func ConnectDB(server string) (*Connection, error) {
 		}
 		return pack.conn, nil
 	}
+}
+func (c *Connection) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return c.DB.Query(query, args...)
+}
+
+func (c *Connection) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	return c.DB.QueryContext(ctx, query, args...)
+}
+
+func (c *Connection) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return c.DB.QueryRowContext(ctx, query, args...)
+}
+
+func (c *Connection) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return c.DB.ExecContext(ctx, query, args...)
 }
