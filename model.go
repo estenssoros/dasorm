@@ -87,7 +87,6 @@ func (m *Model) fieldByName(s string) (reflect.Value, error) {
 func (m *Model) setID(i interface{}) {
 	fbn, err := m.fieldByName("ID")
 	if err == nil {
-		fbn.Set(reflect.ValueOf(i))
 		if fbn.Interface().(uuid.UUID) == (uuid.UUID{}) {
 			fbn.Set(reflect.ValueOf(i))
 		}
