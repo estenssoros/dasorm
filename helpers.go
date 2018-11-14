@@ -282,6 +282,7 @@ func CSVHeaders(c interface{}) []string {
 	return cols
 }
 
+// MustFormatMap formats a string from a map or panics
 func MustFormatMap(s string, m map[string]string) string {
 	s, err := interpol.WithMap(s, m)
 	if err != nil {

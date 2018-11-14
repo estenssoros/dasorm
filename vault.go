@@ -1,11 +1,13 @@
 package dasorm
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
+	"time"
 
 	"github.com/hashicorp/vault/api"
 	homedir "github.com/mitchellh/go-homedir"
@@ -96,6 +98,35 @@ func getConfigVault(environment string) (*Config, error) {
 		configVals.Field(i).SetString(val.(string))
 	}
 	return config, nil
+}
+
+// GetConfigVault uses a context to attempt to connect to vault
+func GetConfigVault(environment string) (*Config, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	ch := make(chan struct {
+		conn *Config
+		err  error
+	})
+
+	go func() {
+		conn, err := getConfigVault(environment)
+		ch <- struct {
+			conn *Config
+			err  error
+		}{conn, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case pack := <-ch:
+		if pack.err != nil {
+			return nil, pack.err
+		}
+		return pack.conn, nil
+	}
+
 }
 
 //AWSCreds stores the creds for an aws user

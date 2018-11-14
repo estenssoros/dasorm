@@ -33,7 +33,7 @@ type Config struct {
 
 // ConnectDB reads creds from service and provides databse connection
 func connectDB(server string) (*Connection, error) {
-	creds, err := getConfigVault(server)
+	creds, err := GetConfigVault(server)
 	if err != nil {
 		return nil, errors.Wrap(err, server)
 	}
@@ -45,6 +45,7 @@ func connectDB(server string) (*Connection, error) {
 	}
 }
 
+// Ping wraps the db ping method
 func (c *Connection) Ping() error {
 	return c.DB.Ping()
 }
@@ -77,6 +78,7 @@ func ConnectDB(server string) (*Connection, error) {
 	}
 }
 
+// ConnectDBTimeout attempts to connect with a custom timeout
 func ConnectDBTimeout(server string, timeout int) (*Connection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
@@ -104,18 +106,22 @@ func ConnectDBTimeout(server string, timeout int) (*Connection, error) {
 	}
 }
 
+// Query wraps the query method
 func (c *Connection) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	return c.DB.Query(query, args...)
 }
 
+// QueryContext wraps the QueryContext method
 func (c *Connection) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	return c.DB.QueryContext(ctx, query, args...)
 }
 
+// QueryRowContext wraps the QueryRowContext method
 func (c *Connection) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	return c.DB.QueryRowContext(ctx, query, args...)
 }
 
+// ExecContext wraps the ExecContext method
 func (c *Connection) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	return c.DB.ExecContext(ctx, query, args...)
 }
