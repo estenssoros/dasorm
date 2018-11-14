@@ -76,6 +76,34 @@ func ConnectDB(server string) (*Connection, error) {
 		return pack.conn, nil
 	}
 }
+
+func ConnectDBTimeout(server string, timeout int) (*Connection, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+	ch := make(chan struct {
+		conn *Connection
+		err  error
+	})
+
+	go func() {
+		conn, err := connectDB(server)
+		ch <- struct {
+			conn *Connection
+			err  error
+		}{conn, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case pack := <-ch:
+		if pack.err != nil {
+			return nil, pack.err
+		}
+		return pack.conn, nil
+	}
+}
+
 func (c *Connection) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	return c.DB.Query(query, args...)
 }
