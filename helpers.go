@@ -244,51 +244,23 @@ type table interface {
 }
 
 // InsertStmt creates insert statement from struct tags
-func InsertStmt(t table) string {
-	structValue := reflect.ValueOf(t)
-	structType := structValue.Type()
-
+func InsertStmt(t interface{}) string {
+	m := &Model{Value: t}
 	stmt := "INSERT INTO `%s` (%s) VALUES "
-
-	numFields := structValue.NumField()
-	cols := make([]string, numFields)
-
-	for i := 0; i < numFields; i++ {
-		f := structType.Field(i)
-		colName := f.Tag.Get("db")
-		if colName == "" {
-			cols[i] = fmt.Sprintf("`%s`", ToSnakeCase(f.Name))
-		} else {
-			cols[i] = fmt.Sprintf("`%s`", colName)
-		}
-	}
-	return fmt.Sprintf(stmt, t.TableName(), strings.Join(cols, ","))
+	return fmt.Sprintf(stmt, m.TableName(), m.Columns())
 }
 
 // SelectStmt generates a select statement from a struct
-func SelectStmt(t table) string {
-	structValue := reflect.ValueOf(t)
-	structType := structValue.Type()
-
+func SelectStmt(t interface{}) string {
+	m := &Model{Value: t}
 	stmt := "SELECT %s FROM `%s`"
-
-	numFields := structValue.NumField()
-	cols := make([]string, numFields)
-	for i := 0; i < numFields; i++ {
-		f := structType.Field(i)
-		colName := f.Tag.Get("db")
-		if colName == "" {
-			cols[i] = fmt.Sprintf("`%s`", ToSnakeCase(f.Name))
-		} else {
-			cols[i] = fmt.Sprintf("`%s`", colName)
-		}
-	}
-	return fmt.Sprintf(stmt, strings.Join(cols, ","), t.TableName())
+	return fmt.Sprintf(stmt, m.Columns(), m.TableName())
 }
 
 // TruncateStmt return the truncate statement for a table
-func TruncateStmt(t table) string {
-	return fmt.Sprintf("TRUNCATE TABLE %s", t.TableName())
+func TruncateStmt(t interface{}) string {
+	m := &Model{Value: t}
+	return fmt.Sprintf("TRUNCATE TABLE %s", m.TableName())
 }
 
 // Scanner returns an slice of interface to a struct
