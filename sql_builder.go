@@ -117,7 +117,7 @@ func (sq *sqlBuilder) buildColumns() []string {
 		return cols
 	}
 
-	cols = sq.Model.ColumnSliceSafe()
+	cols = sq.Model.ColumnSlice()
 	columnCacheMutex.Lock()
 	columnCache[tableName] = cols
 	columnCacheMutex.Unlock()
