@@ -40,6 +40,8 @@ func connectDB(server string) (*Connection, error) {
 	switch creds.Dialect {
 	case "mysql":
 		return connectMySQL(creds)
+	case "postgres":
+		return connectPostgres(creds)
 	default:
 		return nil, fmt.Errorf("%s dialect not recognized", creds.Dialect)
 	}
