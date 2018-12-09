@@ -1,6 +1,7 @@
 package dasorm
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"math"
@@ -278,6 +279,17 @@ func Scanner(u interface{}) []interface{} {
 		v = append(v, valueField.Addr().Interface())
 	}
 	return v
+}
+
+func ScanRow(rows *sql.Rows, v interface{}) error {
+	t := reflect.TypeOf(v)
+	if t.Kind() != reflect.Ptr {
+		return errors.New("passed value to ScanRow must be a pointer")
+	}
+	if err := rows.Scan(Scanner(v)...); err != nil {
+		return err
+	}
+	return nil
 }
 
 // CSVHeaders creates a slice of headers from a struct
