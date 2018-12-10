@@ -65,8 +65,12 @@ func genericCreateMany(db *sqlx.DB, model *Model) error {
 
 func genericUpdate(db *sqlx.DB, model *Model) error {
 	stmt := fmt.Sprintf("UPDATE %s SET %s WHERE %s", model.TableName(), model.UpdateString(), model.whereID())
-	if _, err := db.NamedExec(stmt, model.Value); err != nil {
+	res, err := db.NamedExec(stmt, model.Value)
+	if err != nil {
 		return errors.Wrap(err, "updating record")
+	}
+	if numRows, _ := res.RowsAffected(); numRows == 0 {
+		return errors.New("query updated 0 rows")
 	}
 	return nil
 }
