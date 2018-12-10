@@ -114,6 +114,24 @@ func StringSlice(v interface{}) []string {
 				} else {
 					stringSlice[i] = "NULL"
 				}
+			case reflect.TypeOf(nulls.Time{}):
+				v := value.Interface().(nulls.Time)
+				if v.Valid {
+					stringSlice[i] = v.Time.Format("'2006-01-02 15:04:05'")
+				} else {
+					stringSlice[i] = "NULL"
+				}
+			case reflect.TypeOf(nulls.Bool{}):
+				v := value.Interface().(nulls.Bool)
+				if v.Valid {
+					if v.Bool {
+						stringSlice[i] = "1"
+					} else {
+						stringSlice[i] = "0"
+					}
+				} else {
+					stringSlice[i] = "NULL"
+				}
 			default:
 				panic(fmt.Sprintf("unknown field type: %v", field.Type))
 			}
