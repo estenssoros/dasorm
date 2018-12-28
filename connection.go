@@ -129,3 +129,8 @@ func (c *Connection) QueryRowContext(ctx context.Context, query string, args ...
 func (c *Connection) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	return c.DB.ExecContext(ctx, query, args...)
 }
+
+// ExecContext wraps the ExecContext method
+func (c *Connection) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return c.DB.Exec(query, args...)
+}
