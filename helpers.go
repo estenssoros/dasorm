@@ -16,6 +16,10 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+func IsErrorNoRows(err error) bool {
+	return strings.Contains(err.Error(), "no rows in result set")
+}
+
 // EscapeString replaces error causing characters in  a string
 func EscapeString(sql string) string {
 	dest := make([]byte, 0, 2*len(sql))
