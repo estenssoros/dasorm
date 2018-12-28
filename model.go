@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/estenssoros/dasorm/sqlite"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 )
@@ -96,14 +97,24 @@ func (m *Model) setID(i interface{}) {
 func (m *Model) touchCreatedAt() {
 	fbn, err := m.fieldByName("CreatedAt")
 	if err == nil {
-		fbn.Set(reflect.ValueOf(time.Now().UTC()))
+		switch fbn.Type() {
+		case reflect.TypeOf(time.Time{}):
+			fbn.Set(reflect.ValueOf(time.Now().UTC()))
+		case reflect.TypeOf(sqlite.Time{}):
+			fbn.Set(reflect.ValueOf(sqlite.Time(time.Now().UTC())))
+		}
 	}
 }
 
 func (m *Model) touchUpdatedAt() {
 	fbn, err := m.fieldByName("UpdatedAt")
 	if err == nil {
-		fbn.Set(reflect.ValueOf(time.Now().UTC()))
+		switch fbn.Type() {
+		case reflect.TypeOf(time.Time{}):
+			fbn.Set(reflect.ValueOf(time.Now().UTC()))
+		case reflect.TypeOf(sqlite.Time{}):
+			fbn.Set(reflect.ValueOf(sqlite.Time(time.Now().UTC())))
+		}
 	}
 }
 
