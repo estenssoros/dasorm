@@ -62,3 +62,7 @@ func (p *postgres) SelectOne(db *sqlx.DB, model *Model, query Query) error {
 func (p *postgres) SelectMany(db *sqlx.DB, models *Model, query Query) error {
 	return errors.Wrap(genericSelectMany(db, models, query), "postgres select many")
 }
+
+func (p *postgres) SQLView(db *sqlx.DB, models *Model, format map[string]string) error {
+	return errors.Wrap(genericSQLView(db, models, format), "postgres sql view")
+}

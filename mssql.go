@@ -39,25 +39,29 @@ func (m *mssql) Create(db *sqlx.DB, model *Model) error {
 }
 
 func (m *mssql) CreateMany(db *sqlx.DB, model *Model) error {
-	return errors.Wrap(genericCreateMany(db, model), "mysql create")
+	return errors.Wrap(genericCreateMany(db, model), "mssql create")
 }
 
 func (m *mssql) Update(db *sqlx.DB, model *Model) error {
-	return errors.Wrap(genericUpdate(db, model), "mysql update")
+	return errors.Wrap(genericUpdate(db, model), "mssql update")
 }
 
 func (m *mssql) Destroy(db *sqlx.DB, model *Model) error {
-	return errors.Wrap(genericDestroy(db, model), "mysql destroy")
+	return errors.Wrap(genericDestroy(db, model), "mssql destroy")
 }
 
 func (m *mssql) DestroyMany(db *sqlx.DB, model *Model) error {
-	return errors.Wrap(genericDestroyMany(db, model), "mysql destroy many")
+	return errors.Wrap(genericDestroyMany(db, model), "mssql destroy many")
 }
 
 func (m *mssql) SelectOne(db *sqlx.DB, model *Model, query Query) error {
-	return errors.Wrap(genericSelectOne(db, model, query), "mysql select one")
+	return errors.Wrap(genericSelectOne(db, model, query), "mssql select one")
 }
 
 func (m *mssql) SelectMany(db *sqlx.DB, models *Model, query Query) error {
-	return errors.Wrap(genericSelectMany(db, models, query), "mysql select many")
+	return errors.Wrap(genericSelectMany(db, models, query), "mssql select many")
+}
+
+func (m *mssql) SQLView(db *sqlx.DB, models *Model, format map[string]string) error {
+	return errors.Wrap(genericSQLView(db, models, format), "mssql sql view")
 }

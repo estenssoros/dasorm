@@ -58,3 +58,7 @@ func (s *sqlite3) SelectOne(db *sqlx.DB, model *Model, query Query) error {
 func (s *sqlite3) SelectMany(db *sqlx.DB, models *Model, query Query) error {
 	return errors.Wrap(genericSelectMany(db, models, query), "sqlite3 select many")
 }
+
+func (s *sqlite3) SQLView(db *sqlx.DB, models *Model, format map[string]string) error {
+	return errors.Wrap(genericSQLView(db, models, format), "sqlite3 sql view")
+}

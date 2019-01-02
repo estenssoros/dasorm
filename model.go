@@ -76,6 +76,43 @@ func (m *Model) typeName(t reflect.Type) string {
 	}
 }
 
+// SQLViewAble returns the sql associated with a view for a particular struct
+type SQLViewAble interface {
+	SQLView() string
+}
+
+func (m *Model) SQLView() (string, error) {
+	if n, ok := m.Value.(SQLViewAble); ok {
+		return n.SQLView(), nil
+	}
+	return m.sqlView(reflect.TypeOf(m.Value))
+}
+
+// typeName retrieves the name of an array element
+func (m *Model) sqlView(t reflect.Type) (string, error) {
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	el := t.Elem()
+	switch t.Kind() {
+	case reflect.Slice, reflect.Array:
+		if el.Kind() == reflect.Ptr {
+			el = el.Elem()
+		}
+		// validates if the elem of slice or array implements TableNameAble interface.
+		sqlViewAble := (*SQLViewAble)(nil)
+		if el.Implements(reflect.TypeOf(sqlViewAble).Elem()) {
+			v := reflect.New(el)
+			out := v.MethodByName("SQLView").Call([]reflect.Value{})
+			name := out[0].String()
+			return name, nil
+		}
+		return "", errors.Errorf("%s: model does not implement SQLView", el.Name())
+	default:
+		return "", errors.Errorf("%s: model does not implement SQLView", el.Name())
+	}
+}
+
 func (m *Model) fieldByName(s string) (reflect.Value, error) {
 	el := reflect.ValueOf(m.Value).Elem()
 	fbn := el.FieldByName(s)

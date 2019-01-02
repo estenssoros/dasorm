@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	interpol "github.com/imkira/go-interpol"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -22,6 +23,7 @@ type dialect interface {
 	DestroyMany(*sqlx.DB, *Model) error
 	SelectOne(*sqlx.DB, *Model, Query) error
 	SelectMany(*sqlx.DB, *Model, Query) error
+	SQLView(*sqlx.DB, *Model, map[string]string) error
 }
 
 func genericCreate(db *sqlx.DB, model *Model) error {
@@ -127,6 +129,24 @@ func genericSelectOne(db *sqlx.DB, model *Model, query Query) error {
 func genericSelectMany(db *sqlx.DB, models *Model, query Query) error {
 	sql, args := query.ToSQL(models)
 	if err := db.Select(models.Value, sql, args...); err != nil {
+		return err
+	}
+	return nil
+}
+
+func genericSQLView(db *sqlx.DB, models *Model, format map[string]string) error {
+	var (
+		err error
+		sql string
+	)
+	sql, err = models.SQLView()
+	if format != nil {
+		sql, err = interpol.WithMap(sql, format)
+		if err != nil {
+			return errors.Wrap(err, "formatting sql")
+		}
+	}
+	if err := db.Select(models.Value, sql); err != nil {
 		return err
 	}
 	return nil

@@ -204,3 +204,11 @@ func (c *Connection) Update(model interface{}) error {
 		return nil
 	})
 }
+
+func (c *Connection) SQLView(model interface{}, format map[string]string) error {
+	m := &Model{Value: model}
+	if err := c.Dialect.SQLView(c.DB, m, format); err != nil {
+		return err
+	}
+	return nil
+}
