@@ -146,8 +146,14 @@ func genericSQLView(db *sqlx.DB, models *Model, format map[string]string) error 
 			return errors.Wrap(err, "formatting sql")
 		}
 	}
-	if err := db.Select(models.Value, sql); err != nil {
-		return err
+	if models.isSlice() {
+		if err := db.Select(models.Value, sql); err != nil {
+			return err
+		}
+	} else {
+		if err := db.Select(models.Value, sql); err != nil {
+			return err
+		}
 	}
 	return nil
 }
