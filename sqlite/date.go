@@ -6,50 +6,50 @@ import (
 	"time"
 )
 
-type Time time.Time
+type Date time.Time
 
-func (t Time) String() string {
-	return time.Time(t).Format("2006-01-02 15:04:05")
+func (t Date) String() string {
+	return time.Time(t).Format("01/02/2006")
 }
 
 // NewTime returns a new, properly instantiated
 // Time object.
-func NewTime(t time.Time) Time {
-	return Time(t)
+func NewDate(d time.Time) Date {
+	return Date(d)
 }
 
-func (t *Time) Scan(v interface{}) error {
+func (d *Date) Scan(v interface{}) error {
 	vt, err := time.Parse("2006-01-02 15:04:05-07:00", string(v.([]byte)))
 	if err != nil {
 		return err
 	}
-	*t = Time(vt)
+	*d = Date(vt)
 	return nil
 }
 
-func (t Time) Value() (driver.Value, error) {
-	return time.Time(t), nil
+func (d Date) Value() (driver.Value, error) {
+	return time.Time(d), nil
 }
 
 // MarshalJSON marshals the underlying value to a
 // proper JSON representation.
-func (t Time) MarshalJSON() ([]byte, error) {
-	return json.Marshal(time.Time(t))
+func (d Date) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(d))
 }
 
 // UnmarshalJSON will unmarshal a JSON value into
 // the propert representation of that value.
-func (t *Time) UnmarshalJSON(text []byte) error {
+func (d *Date) UnmarshalJSON(text []byte) error {
 	vt := time.Time{}
 	if err := vt.UnmarshalJSON(text); err != nil {
 		return err
 	}
-	*t = Time(vt)
+	*d = Date(vt)
 	return nil
 }
 
 // UnmarshalText will unmarshal text value into
 // the propert representation of that value.
-func (t *Time) UnmarshalText(text []byte) error {
-	return t.UnmarshalJSON(text)
+func (d *Date) UnmarshalText(text []byte) error {
+	return d.UnmarshalJSON(text)
 }
