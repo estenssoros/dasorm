@@ -151,7 +151,7 @@ func genericSQLView(db *sqlx.DB, models *Model, format map[string]string) error 
 			return err
 		}
 	} else {
-		if err := db.Select(models.Value, sql); err != nil {
+		if err := db.Get(models.Value, sql); err != nil {
 			return err
 		}
 	}
