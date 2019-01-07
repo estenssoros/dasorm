@@ -8,11 +8,11 @@ import (
 
 type Date time.Time
 
-func (t Date) String() string {
-	return time.Time(t).Format("01/02/2006")
+func (d Date) String() string {
+	return time.Time(d).Format("01/02/2006")
 }
 
-// NewTime returns a new, properly instantiated
+// NewDate returns a new, properly instantiated
 // Time object.
 func NewDate(d time.Time) Date {
 	return Date(d)
