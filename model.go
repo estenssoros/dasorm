@@ -252,9 +252,7 @@ func (m *Model) iterate(fn modelIterable) error {
 		for i := 0; i < v.Len(); i++ {
 			val := v.Index(i)
 			newModel := &Model{Value: val.Addr().Interface()}
-			err := fn(newModel)
-
-			if err != nil {
+			if err := fn(newModel); err != nil {
 				return err
 			}
 		}
