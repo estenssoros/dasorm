@@ -3,7 +3,6 @@ package dasorm
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"math"
 	"reflect"
 	"regexp"
@@ -63,6 +62,158 @@ func (c *Connection) StringSlice(v interface{}) []string {
 	return StringSlice(v)
 }
 
+const (
+	StringKind      = 0
+	IntKind         = iota
+	FloatKind       = iota
+	BoolKind        = iota
+	OtherKind       = iota
+	TimeType        = iota
+	UUIDType        = iota
+	NullsIntType    = iota
+	NullsStringType = iota
+	NullsFloatType  = iota
+	NullsTimeType   = iota
+	NullsBoolType   = iota
+	OtherType       = iota
+)
+
+// ValueKind determines the value kind of a reflect value
+func ValueKind(v reflect.Value) int {
+	switch v.Kind() {
+	case reflect.String:
+		return StringKind
+	case reflect.Int, reflect.Int16, reflect.Int8, reflect.Int32, reflect.Int64:
+		return IntKind
+	case reflect.Float64, reflect.Float32:
+		return FloatKind
+	case reflect.Bool:
+		return BoolKind
+	default:
+		return OtherKind
+	}
+}
+
+// ValueToString converts a reflect value to string based on the kind
+func ValueToString(v reflect.Value, kind int) string {
+	switch kind {
+	case StringKind:
+		return v.String()
+	case IntKind:
+		return fmt.Sprintf("%d", v.Int())
+	case FloatKind:
+		if f := v.Float(); math.IsNaN(f) {
+			return "NULL"
+		}
+		return fmt.Sprintf("%f", v.Float())
+	case BoolKind:
+		return fmt.Sprintf("%v", v.Bool())
+	default:
+		return ""
+	}
+}
+
+// FieldType finds the special field type of a field
+func FieldType(f reflect.StructField) int {
+	switch f.Type {
+	case reflect.TypeOf(time.Time{}):
+		return TimeType
+	case reflect.TypeOf(uuid.UUID{}):
+		return UUIDType
+	case reflect.TypeOf(nulls.Int{}):
+		return NullsIntType
+	case reflect.TypeOf(nulls.String{}):
+		return NullsStringType
+	case reflect.TypeOf(nulls.Float64{}):
+		return NullsFloatType
+	case reflect.TypeOf(nulls.Time{}):
+		return NullsTimeType
+	case reflect.TypeOf(nulls.Bool{}):
+		return NullsBoolType
+	default:
+		return OtherType
+	}
+}
+
+// FieldToString converts a reflect values to string based on field type
+func FieldToString(v reflect.Value, fType int) string {
+	i := v.Interface()
+	switch fType {
+	case TimeType:
+		return i.(time.Time).Format("2006-01-02 15:04:05")
+	case UUIDType:
+		return fmt.Sprintf("%s", i.(uuid.UUID).String())
+	case NullsIntType:
+		if v := i.(nulls.Int); v.Valid {
+			return fmt.Sprintf("%d", v.Int)
+		}
+		return "NULL"
+	case NullsStringType:
+		if v := i.(nulls.String); v.Valid {
+			return fmt.Sprintf("'%s'", v.String)
+		}
+		return "NULL"
+	case NullsFloatType:
+		if v := i.(nulls.Float64); v.Valid {
+			return fmt.Sprintf("%f", v.Float64)
+		}
+		return "NULL"
+	case NullsTimeType:
+		if v := i.(nulls.Time); v.Valid {
+			return v.Time.Format("'2006-01-02 15:04:05'")
+		}
+		return "NULL"
+	case NullsBoolType:
+		if v := i.(nulls.Bool); v.Valid {
+			if v.Bool {
+				return "1"
+			}
+			return "0"
+		}
+		return "NULL"
+	}
+	return "NULL"
+}
+
+// StringSliceFilter attemps to only filter for a certain struct field
+func StringSliceFilter(v, f interface{}) []string {
+	var filter string
+	if f == nil {
+		return StringSlice(v)
+	} else {
+		filter = f.(string)
+	}
+	fields := reflect.TypeOf(v)
+	values := reflect.ValueOf(v)
+	if values.Kind() == reflect.Ptr {
+		values = values.Elem()
+		fields = fields.Elem()
+	}
+	numFields := fields.NumField()
+	stringSlice := []string{}
+	for i := 0; i < numFields; i++ {
+		field := fields.Field(i)
+		if tag := field.Tag.Get(filter); tag == "" {
+			continue
+		}
+		value := values.Field(i)
+		kind := ValueKind(value)
+		switch kind {
+		case StringKind, IntKind, FloatKind, BoolKind:
+			stringSlice = append(stringSlice, ValueToString(value, kind))
+		case OtherKind:
+			fType := FieldType(field)
+			switch fType {
+			case TimeType, UUIDType, NullsIntType, NullsStringType, NullsFloatType, NullsTimeType, NullsBoolType:
+				stringSlice = append(stringSlice, FieldToString(value, fType))
+			case OtherType:
+				panic(fmt.Sprintf("unknown field type: %v", field.Type))
+			}
+		}
+	}
+	return stringSlice
+}
+
 // StringSlice converts all fields of a struct to a string slice
 func StringSlice(v interface{}) []string {
 	fields := reflect.TypeOf(v)
@@ -76,72 +227,37 @@ func StringSlice(v interface{}) []string {
 	for i := 0; i < numFields; i++ {
 		field := fields.Field(i)
 		value := values.Field(i)
-		switch value.Kind() {
-		case reflect.String:
-			v := value.String()
-			stringSlice[i] = v
-		case reflect.Int, reflect.Int16, reflect.Int8, reflect.Int32, reflect.Int64:
-			v := value.Int()
-			stringSlice[i] = fmt.Sprintf("%d", v)
-		case reflect.Float64, reflect.Float32:
-			v := value.Float()
-			stringSlice[i] = fmt.Sprintf("%f", v)
-		case reflect.Bool:
-			v := value.Bool()
-			stringSlice[i] = fmt.Sprintf("%v", v)
-		default:
-			switch field.Type {
-			case reflect.TypeOf(time.Time{}):
-				v := value.Interface().(time.Time)
-				stringSlice[i] = v.Format("2006-01-02 15:04:05")
-			case reflect.TypeOf(uuid.UUID{}):
-				v := value.Interface().(uuid.UUID)
-				stringSlice[i] = fmt.Sprintf("%s", v.String())
-			case reflect.TypeOf(nulls.Int{}):
-				v := value.Interface().(nulls.Int)
-				if v.Valid {
-					stringSlice[i] = fmt.Sprintf("%d", v.Int)
-				} else {
-					stringSlice[i] = "NULL"
-				}
-			case reflect.TypeOf(nulls.String{}):
-				v := value.Interface().(nulls.String)
-				if v.Valid {
-					stringSlice[i] = fmt.Sprintf("'%s'", v.String)
-				} else {
-					stringSlice[i] = "NULL"
-				}
-			case reflect.TypeOf(nulls.Float64{}):
-				v := value.Interface().(nulls.Float64)
-				if v.Valid {
-					stringSlice[i] = fmt.Sprintf("%f", v.Float64)
-				} else {
-					stringSlice[i] = "NULL"
-				}
-			case reflect.TypeOf(nulls.Time{}):
-				v := value.Interface().(nulls.Time)
-				if v.Valid {
-					stringSlice[i] = v.Time.Format("'2006-01-02 15:04:05'")
-				} else {
-					stringSlice[i] = "NULL"
-				}
-			case reflect.TypeOf(nulls.Bool{}):
-				v := value.Interface().(nulls.Bool)
-				if v.Valid {
-					if v.Bool {
-						stringSlice[i] = "1"
-					} else {
-						stringSlice[i] = "0"
-					}
-				} else {
-					stringSlice[i] = "NULL"
-				}
-			default:
+		kind := ValueKind(value)
+		switch kind {
+		case StringKind, IntKind, FloatKind, BoolKind:
+			stringSlice[i] = ValueToString(value, kind)
+		case OtherKind:
+			fType := FieldType(field)
+			switch fType {
+			case TimeType, UUIDType, NullsIntType, NullsStringType, NullsFloatType, NullsTimeType, NullsBoolType:
+				stringSlice[i] = FieldToString(value, fType)
+			case OtherType:
 				panic(fmt.Sprintf("unknown field type: %v", field.Type))
 			}
 		}
 	}
 	return stringSlice
+}
+
+func MapToStruct(v interface{}, m map[string]interface{}) error {
+	values := reflect.ValueOf(v)
+	if values.Kind() != reflect.Ptr {
+		return errors.New("map to string only supports pointers. passed non-pointer value")
+	}
+	values = values.Elem()
+	for name, i := range m {
+		fbn := values.FieldByName(name)
+		if !fbn.IsValid() {
+			continue
+		}
+		fbn.Set(reflect.ValueOf(i))
+	}
+	return nil
 }
 
 // StringTuple converts struct to MySQL compatible string tuple
@@ -157,45 +273,32 @@ func StringTuple(c interface{}) string {
 	for i := 0; i < numFields; i++ {
 		field := fields.Field(i)
 		value := values.Field(i)
-		switch value.Kind() {
-		case reflect.String:
+		kind := ValueKind(value)
+		switch kind {
+		case StringKind:
 			stringSlice[i] = fmt.Sprintf("'%s'", EscapeString(value.String()))
-		case reflect.Int, reflect.Int16, reflect.Int8, reflect.Int32, reflect.Int64:
-			stringSlice[i] = fmt.Sprintf("%d", value.Int())
-		case reflect.Float64, reflect.Float32:
-			v := value.Float()
-			if math.IsNaN(v) {
-				stringSlice[i] = "NULL"
-			} else {
-				stringSlice[i] = fmt.Sprintf("%f", v)
-			}
-		case reflect.Bool:
-			stringSlice[i] = fmt.Sprintf("%v", value.Bool())
-		default:
-			switch field.Type {
-			case reflect.TypeOf(time.Time{}):
-				v := value.Interface().(time.Time)
-				stringSlice[i] = v.Format("'2006-01-02 15:04:05'")
-			case reflect.TypeOf(uuid.UUID{}):
-				v := value.Interface().(uuid.UUID)
-				stringSlice[i] = fmt.Sprintf("'%s'", v.String())
-			case reflect.TypeOf(nulls.Int{}):
+		case IntKind, FloatKind, BoolKind:
+			stringSlice[i] = ValueToString(value, kind)
+		case OtherKind:
+			fType := FieldType(field)
+			switch fType {
+			case TimeType, UUIDType:
+				stringSlice[i] = fmt.Sprintf("'%s'", FieldToString(value, fType))
+			case NullsIntType:
 				v := value.Interface().(nulls.Int)
 				if v.Valid {
 					stringSlice[i] = fmt.Sprintf("%d", v.Int)
 				} else {
 					stringSlice[i] = "NULL"
 				}
-			case reflect.TypeOf(nulls.String{}):
-				v := value.Interface().(nulls.String)
-				if v.Valid {
+			case NullsStringType:
+				if v := value.Interface().(nulls.String); v.Valid {
 					stringSlice[i] = fmt.Sprintf("'%s'", EscapeString(v.String))
 				} else {
 					stringSlice[i] = "NULL"
 				}
-			case reflect.TypeOf(nulls.Float64{}):
-				v := value.Interface().(nulls.Float64)
-				if v.Valid {
+			case NullsFloatType:
+				if v := value.Interface().(nulls.Float64); v.Valid {
 					if math.IsNaN(v.Float64) {
 						stringSlice[i] = "NULL"
 					} else {
@@ -204,16 +307,15 @@ func StringTuple(c interface{}) string {
 				} else {
 					stringSlice[i] = "NULL"
 				}
-			case reflect.TypeOf(nulls.Time{}):
-				v := value.Interface().(nulls.Time)
-				if v.Valid {
+			case NullsTimeType:
+				if v := value.Interface().(nulls.Time); v.Valid {
 					stringSlice[i] = v.Time.Format("'2006-01-02 15:04:05'")
+
 				} else {
 					stringSlice[i] = "NULL"
 				}
-			case reflect.TypeOf(nulls.Bool{}):
-				v := value.Interface().(nulls.Bool)
-				if v.Valid {
+			case NullsBoolType:
+				if v := value.Interface().(nulls.Bool); v.Valid {
 					if v.Bool {
 						stringSlice[i] = "1"
 					} else {
@@ -222,7 +324,7 @@ func StringTuple(c interface{}) string {
 				} else {
 					stringSlice[i] = "NULL"
 				}
-			default:
+			case OtherType:
 				panic(fmt.Sprintf("unknown field type: %v", field.Type))
 			}
 		}
@@ -241,16 +343,6 @@ func (c *Connection) CSVHeaders(v interface{}) []string {
 		cols[i] = f.Tag.Get("db")
 	}
 	return cols
-}
-
-// searches for a model field. returns an error if non exists
-func getModelField(v reflect.Value, s string) (reflect.Value, error) {
-	fbn := v.FieldByName(s)
-	log.Println(fbn)
-	if !fbn.IsValid() {
-		return fbn, errors.Errorf("Model does not have a field named %s", s)
-	}
-	return fbn, nil
 }
 
 // ToSnakeCase conerts to snakecase
@@ -303,6 +395,7 @@ func Scanner(u interface{}) []interface{} {
 	return v
 }
 
+// ScanRow scans an interface pointer into a row
 func ScanRow(rows *sql.Rows, v interface{}) error {
 	t := reflect.TypeOf(v)
 	if t.Kind() != reflect.Ptr {
@@ -327,13 +420,26 @@ func CSVHeaders(c interface{}) []string {
 	return cols
 }
 
+// StructHeaders creates a slice of headers from a struct
+func StructHeaders(v interface{}) []string {
+	structValue := reflect.ValueOf(v)
+	structType := structValue.Type()
+	numFields := structValue.NumField()
+	cols := make([]string, numFields)
+	for i := 0; i < numFields; i++ {
+		f := structType.Field(i)
+		cols[i] = f.Name
+	}
+	return cols
+}
+
 // MustFormatMap formats a string from a map or panics
 func MustFormatMap(s string, m map[string]string) string {
-	s, err := interpol.WithMap(s, m)
-	if err != nil {
+	if s, err := interpol.WithMap(s, m); err != nil {
 		panic(err)
+	} else {
+		return s
 	}
-	return s
 }
 
 // InsertIgnore crafts insert ignore statement fro mstruct tags
