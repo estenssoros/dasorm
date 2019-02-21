@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/estenssoros/dasorm/sqlite"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 )
@@ -137,8 +136,6 @@ func (m *Model) touchCreatedAt() {
 		switch fbn.Type() {
 		case reflect.TypeOf(time.Time{}):
 			fbn.Set(reflect.ValueOf(time.Now().UTC()))
-		case reflect.TypeOf(sqlite.Time{}):
-			fbn.Set(reflect.ValueOf(sqlite.Time(time.Now().UTC())))
 		}
 	}
 }
@@ -149,8 +146,6 @@ func (m *Model) touchUpdatedAt() {
 		switch fbn.Type() {
 		case reflect.TypeOf(time.Time{}):
 			fbn.Set(reflect.ValueOf(time.Now().UTC()))
-		case reflect.TypeOf(sqlite.Time{}):
-			fbn.Set(reflect.ValueOf(sqlite.Time(time.Now().UTC())))
 		}
 	}
 }
