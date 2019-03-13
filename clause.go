@@ -21,27 +21,7 @@ func (c clauses) Join(sep string) string {
 
 func (c clauses) Args() (args []interface{}) {
 	for _, clause := range c {
-		for _, arg := range clause.Arguments {
-			args = append(args, arg)
-		}
+		args = append(args, clause.Arguments...)
 	}
 	return
-}
-
-type fromClause struct {
-	From string
-}
-
-type fromClauses []fromClause
-
-func (c fromClause) String() string {
-	return c.From
-}
-
-func (c fromClauses) String() string {
-	cs := []string{}
-	for _, cl := range c {
-		cs = append(cs, cl.String())
-	}
-	return strings.Join(cs, ", ")
 }

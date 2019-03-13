@@ -12,9 +12,10 @@ import (
 	"github.com/estenssoros/dasorm/nulls"
 	interpol "github.com/imkira/go-interpol"
 	"github.com/pkg/errors"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
+// IsErrorNoRows determine if the error is no rows in result
 func IsErrorNoRows(err error) bool {
 	return strings.Contains(err.Error(), "no rows in result set")
 }
@@ -29,22 +30,16 @@ func EscapeString(sql string) string {
 		switch c {
 		case 0: /* Must be escaped for 'mysql' */
 			escape = '0'
-			break
 		case '\n': /* Must be escaped for logs */
 			escape = 'n'
-			break
 		case '\r':
 			escape = 'r'
-			break
 		case '\\':
 			escape = '\\'
-			break
 		case '\'':
 			escape = '\''
-			break
 		case '"': /* Better safe than sorry */
 			escape = '"'
-			break
 		case '\032': /* This gives problems on Win32 */
 			escape = 'Z'
 		}
@@ -63,19 +58,32 @@ func (c *Connection) StringSlice(v interface{}) []string {
 }
 
 const (
-	StringKind      = 0
-	IntKind         = iota
-	FloatKind       = iota
-	BoolKind        = iota
-	OtherKind       = iota
-	TimeType        = iota
-	UUIDType        = iota
-	NullsIntType    = iota
+	// StringKind kind
+	StringKind = 0
+	// IntKind kind
+	IntKind = iota
+	// FloatKind kind
+	FloatKind = iota
+	// BoolKind kind
+	BoolKind = iota
+	// OtherKind kind
+	OtherKind = iota
+	// TimeType kind
+	TimeType = iota
+	// UUIDType kind
+	UUIDType = iota
+	// NullsIntType kind
+	NullsIntType = iota
+	// NullsStringType kind
 	NullsStringType = iota
-	NullsFloatType  = iota
-	NullsTimeType   = iota
-	NullsBoolType   = iota
-	OtherType       = iota
+	// NullsFloatType kind
+	NullsFloatType = iota
+	// NullsTimeType kind
+	NullsTimeType = iota
+	// NullsBoolType kind
+	NullsBoolType = iota
+	// OtherType kind
+	OtherType = iota
 )
 
 // ValueKind determines the value kind of a reflect value
@@ -142,7 +150,7 @@ func FieldToString(v reflect.Value, fType int) string {
 	case TimeType:
 		return i.(time.Time).Format("2006-01-02 15:04:05")
 	case UUIDType:
-		return fmt.Sprintf("%s", i.(uuid.UUID).String())
+		return i.(uuid.UUID).String()
 	case NullsIntType:
 		if v := i.(nulls.Int); v.Valid {
 			return fmt.Sprintf("%d", v.Int)
@@ -180,9 +188,10 @@ func StringSliceFilter(v, f interface{}) []string {
 	var filter string
 	if f == nil {
 		return StringSlice(v)
-	} else {
-		filter = f.(string)
 	}
+
+	filter = f.(string)
+
 	fields := reflect.TypeOf(v)
 	values := reflect.ValueOf(v)
 	if values.Kind() == reflect.Ptr {
@@ -244,6 +253,7 @@ func StringSlice(v interface{}) []string {
 	return stringSlice
 }
 
+// MapToStruct converts a map of string interface to struct
 func MapToStruct(v interface{}, m map[string]interface{}) error {
 	values := reflect.ValueOf(v)
 	if values.Kind() != reflect.Ptr {

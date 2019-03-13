@@ -8,10 +8,8 @@ import (
 	interpol "github.com/imkira/go-interpol"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
-
-var emptyUUID = uuid.Nil.String()
 
 type dialect interface {
 	Name() string
@@ -140,6 +138,9 @@ func genericSQLView(db *sqlx.DB, models *Model, format map[string]string) error 
 		sql string
 	)
 	sql, err = models.SQLView()
+	if err != nil {
+		return err
+	}
 	if format != nil {
 		sql, err = interpol.WithMap(sql, format)
 		if err != nil {

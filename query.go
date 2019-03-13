@@ -10,10 +10,8 @@ import (
 type Query struct {
 	RawSQL       *clause
 	limitResults int
-	addColumns   []string
 	whereClauses clauses
 	orderClauses clauses
-	fromClauses  fromClauses
 	Connection   *Connection
 }
 
@@ -205,6 +203,7 @@ func (c *Connection) Update(model interface{}) error {
 	})
 }
 
+// SQLView performs the sql view query on a model
 func (c *Connection) SQLView(model interface{}, format map[string]string) error {
 	m := &Model{Value: model}
 	if err := c.Dialect.SQLView(c.DB, m, format); err != nil {

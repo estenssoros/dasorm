@@ -18,7 +18,6 @@ type modelIterable func(*Model) error
 // Model wraps the end user interface that is passed in to many functions.
 type Model struct {
 	Value
-	tableName string
 }
 
 // ID returns the ID of the Model. All models must have an `ID` field this is
@@ -80,6 +79,7 @@ type SQLViewAble interface {
 	SQLView() string
 }
 
+// SQLView returns the sql view for a model
 func (m *Model) SQLView() (string, error) {
 	if n, ok := m.Value.(SQLViewAble); ok {
 		return n.SQLView(), nil
@@ -180,7 +180,7 @@ func (m *Model) ColumnSlice() []string {
 		if colName == "" {
 			continue
 		}
-		cols = append(cols, fmt.Sprintf("%s", colName))
+		cols = append(cols, colName)
 	}
 	return cols
 }
@@ -206,15 +206,6 @@ func (m *Model) ColumnsSafe() string {
 		cols[i] = fmt.Sprintf("`%s`", cols[i])
 	}
 	return strings.Join(cols, ",")
-}
-
-func isin(list []string, test string) bool {
-	for _, el := range list {
-		if el == test {
-			return true
-		}
-	}
-	return false
 }
 
 // TokenizedString tokenizes columns
