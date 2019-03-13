@@ -31,22 +31,27 @@ type Config struct {
 	Password string `vault:"password"`
 }
 
-// ConnectDB reads creds from service and provides databse connection
-func connectDB(server string) (*Connection, error) {
-	creds, err := GetConfigVault(server)
+// ConnectDBConfig connects to db given config
+func ConnectDBConfig(config *Config) (*Connection, error) {
+	switch config.Dialect {
+	case "mysql":
+		return connectMySQL(config)
+	case "postgres":
+		return connectPostgres(config)
+	case "microsoft_sql":
+		return connectMSSQL(config)
+	default:
+		return nil, fmt.Errorf("%s dialect not recognized", config.Dialect)
+	}
+}
+
+// connectDBHandler reads creds from service and provides databse connection
+func connectDBHandler(server string) (*Connection, error) {
+	config, err := GetConfigVault(server)
 	if err != nil {
 		return nil, errors.Wrap(err, server)
 	}
-	switch creds.Dialect {
-	case "mysql":
-		return connectMySQL(creds)
-	case "postgres":
-		return connectPostgres(creds)
-	case "microsoft_sql":
-		return connectMSSQL(creds)
-	default:
-		return nil, fmt.Errorf("%s dialect not recognized", creds.Dialect)
-	}
+	return ConnectDBConfig(config)
 }
 
 // Ping wraps the db ping method
@@ -64,7 +69,7 @@ func ConnectDB(server string) (*Connection, error) {
 	})
 
 	go func() {
-		conn, err := connectDB(server)
+		conn, err := connectDBHandler(server)
 		ch <- struct {
 			conn *Connection
 			err  error
@@ -92,7 +97,7 @@ func ConnectDBTimeout(server string, timeout int) (*Connection, error) {
 	})
 
 	go func() {
-		conn, err := connectDB(server)
+		conn, err := connectDBHandler(server)
 		ch <- struct {
 			conn *Connection
 			err  error
@@ -130,7 +135,7 @@ func (c *Connection) ExecContext(ctx context.Context, query string, args ...inte
 	return c.DB.ExecContext(ctx, query, args...)
 }
 
-// ExecContext wraps the ExecContext method
+// Exec wraps the ExecContext method
 func (c *Connection) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return c.DB.Exec(query, args...)
 }
