@@ -9,7 +9,7 @@ import (
 )
 
 func connectMSSQL(creds *Config) (*Connection, error) {
-	connectionURL := fmt.Sprintf("sqlserver://%s:%s@%s?", creds.User, creds.Password, creds.Host)
+	connectionURL := fmt.Sprintf("sqlserver://%s:%s@%s?database=%s", creds.User, creds.Password, creds.Host, creds.Database)
 	db, err := sqlx.Connect("mssql", connectionURL)
 	if err != nil {
 		return nil, err
