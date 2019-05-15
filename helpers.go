@@ -375,6 +375,13 @@ func InsertStmt(t interface{}) string {
 	return fmt.Sprintf(stmt, m.TableName(), m.Columns())
 }
 
+// ReplaceStmt creates insert replac estatement from struct tags
+func ReplaceStmt(t interface{}) string {
+	m := &Model{Value: t}
+	stmt := "REPLACE INTO `%s` (%s) VALUES "
+	return fmt.Sprintf(stmt, m.TableName(), m.Columns())
+}
+
 // SelectStmt generates a select statement from a struct
 func SelectStmt(t interface{}) string {
 	m := &Model{Value: t}
