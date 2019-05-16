@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -138,4 +139,15 @@ func (c *Connection) ExecContext(ctx context.Context, query string, args ...inte
 // Exec wraps the ExecContext method
 func (c *Connection) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return c.DB.Exec(query, args...)
+}
+
+func (c *Connection) WriteTuples(insertStmt string, tuples []string) error {
+	if _, err := c.DB.Exec(insertStmt + strings.Join(tuples, ",")); err != nil {
+		for _, t := range tuples {
+			if _, err := c.DB.Exec(insertStmt + t); err != nil {
+				return errors.Wrap(err, insertStmt+t)
+			}
+		}
+	}
+	return nil
 }
