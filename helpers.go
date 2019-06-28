@@ -395,6 +395,13 @@ func TruncateStmt(t interface{}) string {
 	return fmt.Sprintf("TRUNCATE TABLE %s", m.TableName())
 }
 
+//InsertIgnoreStatement executes insert ignore
+func InsertIgnoreStatement(t interface{}) string {
+	m := &Model{Value: t}
+	stmt := `INSERT IGNORE INTO %s_new (%s) VALUES`
+	return fmt.Sprintf(stmt, m.TableName(), m.Columns())
+}
+
 // Scanner returns an slice of interface to a struct
 // rows.Scan(seaspandb.Scanner(&m)...)
 func Scanner(u interface{}) []interface{} {
@@ -426,8 +433,12 @@ func ScanRow(rows *sql.Rows, v interface{}) error {
 
 // CSVHeaders creates a slice of headers from a struct
 func CSVHeaders(c interface{}) []string {
+	structType := reflect.TypeOf(c)
 	structValue := reflect.ValueOf(c)
-	structType := structValue.Type()
+	if structValue.Kind() == reflect.Ptr {
+		structType = structType.Elem()
+		structValue = structValue.Elem()
+	}
 	numFields := structValue.NumField()
 	cols := make([]string, numFields)
 	for i := 0; i < numFields; i++ {
