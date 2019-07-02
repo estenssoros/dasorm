@@ -279,60 +279,63 @@ func StringTuple(c interface{}) string {
 		fields = fields.Elem()
 	}
 	numFields := fields.NumField()
-	stringSlice := make([]string, numFields)
+	stringSlice := []string{}
 	for i := 0; i < numFields; i++ {
 		field := fields.Field(i)
 		value := values.Field(i)
+		if tag := field.Tag.Get("db"); tag == "" {
+			continue
+		}
 		kind := ValueKind(value)
 		switch kind {
 		case StringKind:
-			stringSlice[i] = fmt.Sprintf("'%s'", EscapeString(value.String()))
+			stringSlice = append(stringSlice, fmt.Sprintf("'%s'", EscapeString(value.String())))
 		case IntKind, FloatKind, BoolKind:
-			stringSlice[i] = ValueToString(value, kind)
+			stringSlice = append(stringSlice, ValueToString(value, kind))
 		case OtherKind:
 			fType := FieldType(field)
 			switch fType {
 			case TimeType, UUIDType:
-				stringSlice[i] = fmt.Sprintf("'%s'", FieldToString(value, fType))
+				stringSlice = append(stringSlice, fmt.Sprintf("'%s'", FieldToString(value, fType)))
 			case NullsIntType:
 				v := value.Interface().(nulls.Int)
 				if v.Valid {
-					stringSlice[i] = fmt.Sprintf("%d", v.Int)
+					stringSlice = append(stringSlice, fmt.Sprintf("%d", v.Int))
 				} else {
-					stringSlice[i] = "NULL"
+					stringSlice = append(stringSlice, "NULL")
 				}
 			case NullsStringType:
 				if v := value.Interface().(nulls.String); v.Valid {
-					stringSlice[i] = fmt.Sprintf("'%s'", EscapeString(v.String))
+					stringSlice = append(stringSlice, fmt.Sprintf("'%s'", EscapeString(v.String)))
 				} else {
-					stringSlice[i] = "NULL"
+					stringSlice = append(stringSlice, "NULL")
 				}
 			case NullsFloatType:
 				if v := value.Interface().(nulls.Float64); v.Valid {
 					if math.IsNaN(v.Float64) {
-						stringSlice[i] = "NULL"
+						stringSlice = append(stringSlice, "NULL")
 					} else {
-						stringSlice[i] = fmt.Sprintf("%f", v.Float64)
+						stringSlice = append(stringSlice, fmt.Sprintf("%f", v.Float64))
 					}
 				} else {
-					stringSlice[i] = "NULL"
+					stringSlice = append(stringSlice, "NULL")
 				}
 			case NullsTimeType:
 				if v := value.Interface().(nulls.Time); v.Valid {
-					stringSlice[i] = v.Time.Format("'2006-01-02 15:04:05'")
+					stringSlice = append(stringSlice, v.Time.Format("'2006-01-02 15:04:05'"))
 
 				} else {
-					stringSlice[i] = "NULL"
+					stringSlice = append(stringSlice, "NULL")
 				}
 			case NullsBoolType:
 				if v := value.Interface().(nulls.Bool); v.Valid {
 					if v.Bool {
-						stringSlice[i] = "1"
+						stringSlice = append(stringSlice, "1")
 					} else {
-						stringSlice[i] = "0"
+						stringSlice = append(stringSlice, "0")
 					}
 				} else {
-					stringSlice[i] = "NULL"
+					stringSlice = append(stringSlice, "NULL")
 				}
 			case OtherType:
 				panic(fmt.Sprintf("unknown field type: %v", field.Type))
