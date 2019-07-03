@@ -401,7 +401,7 @@ func TruncateStmt(t interface{}) string {
 //InsertIgnoreStatement executes insert ignore
 func InsertIgnoreStatement(t interface{}) string {
 	m := &Model{Value: t}
-	stmt := `INSERT IGNORE INTO %s_new (%s) VALUES`
+	stmt := `INSERT IGNORE INTO %s (%s) VALUES`
 	return fmt.Sprintf(stmt, m.TableName(), m.Columns())
 }
 
