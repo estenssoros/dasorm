@@ -28,35 +28,28 @@ func genericCreate(db *sqlx.DB, model *Model) error {
 	model.setID(uuid.Must(uuid.NewV4()))
 	model.touchCreatedAt()
 	model.touchUpdatedAt()
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", model.TableName(), model.Columns(), model.TokenizedString())
-	stmt, err := db.PrepareNamed(query)
-	if err != nil {
-		return errors.WithStack(err)
+	query := InsertStmt(model.Value) + StringTuple(model.Value)
+	if _, err := db.Exec(query); err != nil {
+		return err
 	}
-	if _, err := stmt.Exec(model.Value); err != nil {
-		if err := stmt.Close(); err != nil {
-			return errors.WithMessage(err, "failed to close statement")
-		}
-		return errors.WithStack(err)
-	}
-	return errors.WithMessage(stmt.Close(), "failed to close statement")
+	return nil
 }
 
 func genericCreateMany(db *sqlx.DB, model *Model) error {
 	if !model.isSlice() {
 		return errors.New("must pass slice")
 	}
-	values := []string{}
 	v := reflect.Indirect(reflect.ValueOf(model.Value))
+	tuples := make([]string, v.Len())
 	for i := 0; i < v.Len(); i++ {
 		val := v.Index(i)
-		newModel := &Model{Value: val.Addr().Interface()}
+		newModel := &Model{Value: val.Interface()}
 		newModel.setID(uuid.Must(uuid.NewV4()))
 		newModel.touchCreatedAt()
 		newModel.touchUpdatedAt()
-		values = append(values, StringTuple(newModel.Value))
+		tuples[i] = StringTuple(newModel.Value)
 	}
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", model.TableName(), model.Columns(), strings.Join(values, ","))
+	query := InsertStmt(model.Value) + strings.Join(tuples, ",")
 	if _, err := db.Exec(query); err != nil {
 		return err
 	}
