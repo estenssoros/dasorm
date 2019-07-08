@@ -15,6 +15,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+var timeFmt = "2006-01-02 15:04:05"
+
 // IsErrorNoRows determine if the error is no rows in result
 func IsErrorNoRows(err error) bool {
 	return strings.Contains(err.Error(), "no rows in result set")
@@ -148,7 +150,7 @@ func FieldToString(v reflect.Value, fType int) string {
 	i := v.Interface()
 	switch fType {
 	case TimeType:
-		return i.(time.Time).Format("2006-01-02 15:04:05")
+		return i.(time.Time).Format(timeFmt)
 	case UUIDType:
 		return i.(uuid.UUID).String()
 	case NullsIntType:
@@ -374,21 +376,21 @@ type table interface {
 // InsertStmt creates insert statement from struct tags
 func InsertStmt(t interface{}) string {
 	m := &Model{Value: t}
-	stmt := "INSERT INTO `%s` (%s) VALUES "
+	stmt := "INSERT INTO %s (%s) VALUES"
 	return fmt.Sprintf(stmt, m.TableName(), m.Columns())
 }
 
 // ReplaceStmt creates insert replac estatement from struct tags
 func ReplaceStmt(t interface{}) string {
 	m := &Model{Value: t}
-	stmt := "REPLACE INTO `%s` (%s) VALUES "
+	stmt := "REPLACE INTO %s (%s) VALUES"
 	return fmt.Sprintf(stmt, m.TableName(), m.Columns())
 }
 
 // SelectStmt generates a select statement from a struct
 func SelectStmt(t interface{}) string {
 	m := &Model{Value: t}
-	stmt := "SELECT %s FROM `%s`"
+	stmt := "SELECT %s FROM %s"
 	return fmt.Sprintf(stmt, m.Columns(), m.TableName())
 }
 
@@ -398,8 +400,8 @@ func TruncateStmt(t interface{}) string {
 	return fmt.Sprintf("TRUNCATE TABLE %s", m.TableName())
 }
 
-//InsertIgnoreStatement executes insert ignore
-func InsertIgnoreStatement(t interface{}) string {
+//InsertIgnoreStmt executes insert ignore
+func InsertIgnoreStmt(t interface{}) string {
 	m := &Model{Value: t}
 	stmt := `INSERT IGNORE INTO %s (%s) VALUES`
 	return fmt.Sprintf(stmt, m.TableName(), m.Columns())
@@ -471,25 +473,4 @@ func MustFormatMap(s string, m map[string]string) string {
 	} else {
 		return s
 	}
-}
-
-// InsertIgnore crafts insert ignore statement fro mstruct tags
-func InsertIgnore(t table) string {
-	structValue := reflect.ValueOf(t)
-	structType := structValue.Type()
-
-	stmt := "INSERT IGNORE INTO `%s` (%s) VALUES "
-
-	numFields := structValue.NumField()
-	cols := make([]string, numFields)
-
-	for i := 0; i < numFields; i++ {
-		f := structType.Field(i)
-		colName := f.Tag.Get("db")
-		if colName == "" {
-			colName = ToSnakeCase(f.Name)
-		}
-		cols[i] = fmt.Sprintf("`%s`", colName)
-	}
-	return fmt.Sprintf(stmt, t.TableName(), strings.Join(cols, ","))
 }
