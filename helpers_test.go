@@ -12,6 +12,7 @@ type TestStruct struct {
 	ID        uuid.UUID `db:"id"`
 	Name      string    `db:"name"`
 	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 	AnInt     int       `db:"an_int"`
 	AFloat    float64   `db:"a_float"`
 	ABool     bool      `db:"a_bool"`
@@ -38,6 +39,7 @@ func NewTestStruct() *TestStruct {
 		ID:        testUUID,
 		Name:      "asdf",
 		CreatedAt: testTime,
+		UpdatedAt: testTime,
 		AnInt:     7,
 		AFloat:    7.0,
 		ABool:     true,
@@ -49,20 +51,20 @@ func TestMapToStruct(t *testing.T) {
 		"ID":        testUUID,
 		"Name":      "asdf",
 		"CreatedAt": testTime,
+		"UpdatedAt": testTime,
 		"AnInt":     7,
 		"AFloat":    7.0,
 		"ABool":     true,
 	}
 	v := &TestStruct{}
 	if err := MapToStruct(v, m); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
-	fmt.Println(v)
 }
 
 func TestInsertStmt(t *testing.T) {
 	m := NewTestStruct()
-	want := "INSERT INTO test (id,name,created_at,an_int,a_float,a_bool) VALUES "
+	want := "INSERT INTO test (id,name,created_at,updated_at,an_int,a_float,a_bool) VALUES"
 	if have := InsertStmt(m); want != have {
 		t.Errorf("have: %s, want: %s", have, want)
 	}
@@ -70,7 +72,7 @@ func TestInsertStmt(t *testing.T) {
 
 func TestReplaceStmt(t *testing.T) {
 	m := NewTestStruct()
-	want := "REPLACE INTO test (id,name,created_at,an_int,a_float,a_bool) VALUES"
+	want := "REPLACE INTO test (id,name,created_at,updated_at,an_int,a_float,a_bool) VALUES"
 	if have := ReplaceStmt(m); want != have {
 		t.Errorf("have: %s, want: %s", have, want)
 	}
@@ -78,7 +80,7 @@ func TestReplaceStmt(t *testing.T) {
 
 func TestSelectStmt(t *testing.T) {
 	m := NewTestStruct()
-	want := "SELECT id,name,created_at,an_int,a_float,a_bool FROM test"
+	want := "SELECT id,name,created_at,updated_at,an_int,a_float,a_bool FROM test"
 	if have := SelectStmt(m); want != have {
 		t.Errorf("have: %s, want: %s", have, want)
 	}
@@ -92,7 +94,7 @@ func TestTruncateStmt(t *testing.T) {
 }
 func TestInsertIgnoreStmt(t *testing.T) {
 	m := NewTestStruct()
-	want := "INSERT IGNORE INTO test (id,name,created_at,an_int,a_float,a_bool) VALUES"
+	want := "INSERT IGNORE INTO test (id,name,created_at,updated_at,an_int,a_float,a_bool) VALUES"
 	if have := InsertIgnoreStmt(m); want != have {
 		t.Errorf("have: %s, want: %s", have, want)
 	}
@@ -100,7 +102,7 @@ func TestInsertIgnoreStmt(t *testing.T) {
 
 func TestStringTuple(t *testing.T) {
 	m := NewTestStruct()
-	want := "('{test_uuid}','asdf','{test_time}',7,7.000000,true)"
+	want := "('{test_uuid}','asdf','{test_time}','{test_time}',7,7.000000,true)"
 	want = MustFormatMap(want, testFormat)
 	if have := StringTuple(m); want != have {
 		t.Errorf("have: %s, want: %s", have, want)
@@ -111,6 +113,7 @@ func TestStringSlice(t *testing.T) {
 	wantSlice := []string{
 		fmt.Sprintf("%s", testUUID.String()),
 		"asdf",
+		fmt.Sprintf("%s", testTime.Format(timeFmt)),
 		fmt.Sprintf("%s", testTime.Format(timeFmt)),
 		"7",
 		"7.000000",
@@ -133,6 +136,7 @@ func TestCSVHeaders(t *testing.T) {
 		"id",
 		"name",
 		"created_at",
+		"updated_at",
 		"an_int",
 		"a_float",
 		"a_bool",
