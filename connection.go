@@ -141,6 +141,7 @@ func (c *Connection) Exec(query string, args ...interface{}) (sql.Result, error)
 	return c.DB.Exec(query, args...)
 }
 
+// WriteTuples writes tuples to database
 func (c *Connection) WriteTuples(insertStmt string, tuples []string) error {
 	if _, err := c.DB.Exec(insertStmt + strings.Join(tuples, ",")); err != nil {
 		for _, t := range tuples {
