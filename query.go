@@ -211,3 +211,21 @@ func (c *Connection) SQLView(model interface{}, format map[string]string) error 
 	}
 	return nil
 }
+
+// CreateManyUpdate creates or updates
+func (c *Connection) CreateManyUpdate(model interface{}) error {
+	m := &Model{Value: model}
+	if err := c.Dialect.CreateManyUpdate(c.DB, m); err != nil {
+		return err
+	}
+	return nil
+}
+
+// CreateUpdate creates or updates
+func (c *Connection) CreateUpdate(model interface{}) error {
+	m := &Model{Value: model}
+	if err := c.Dialect.CreateUpdate(c.DB, m); err != nil {
+		return err
+	}
+	return nil
+}

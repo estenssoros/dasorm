@@ -15,7 +15,9 @@ type dialect interface {
 	Name() string
 	TranslateSQL(string) string
 	Create(*sqlx.DB, *Model) error
+	CreateUpdate(*sqlx.DB, *Model) error
 	CreateMany(*sqlx.DB, *Model) error
+	CreateManyUpdate(*sqlx.DB, *Model) error
 	Update(*sqlx.DB, *Model) error
 	Destroy(*sqlx.DB, *Model) error
 	DestroyMany(*sqlx.DB, *Model) error
@@ -148,6 +150,38 @@ func genericSQLView(db *sqlx.DB, models *Model, format map[string]string) error 
 		if err := db.Get(models.Value, sql); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func genericCreateUpdate(db *sqlx.DB, model *Model) error {
+	model.setID(uuid.Must(uuid.NewV4()))
+	model.touchCreatedAt()
+	model.touchUpdatedAt()
+	query := InsertStmt(model.Value) + StringTuple(model.Value) + model.DuplicateStmt()
+	if _, err := db.Exec(query); err != nil {
+		return err
+	}
+	return nil
+}
+
+func genericCreateManyUpdate(db *sqlx.DB, model *Model) error {
+	if !model.isSlice() {
+		return errors.New("must pass slice1")
+	}
+	v := reflect.Indirect(reflect.ValueOf(model.Value))
+	tuples := make([]string, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		val := v.Index(i)
+		newModel := &Model{Value: val.Interface()}
+		newModel.setID(uuid.Must(uuid.NewV4()))
+		newModel.touchCreatedAt()
+		newModel.touchUpdatedAt()
+		tuples[i] = StringTuple(newModel.Value)
+	}
+	query := InsertStmt(model.Value) + strings.Join(tuples, ",") + model.DuplicateStmt()
+	if _, err := db.Exec(query); err != nil {
+		return err
 	}
 	return nil
 }

@@ -65,3 +65,11 @@ func (m *mssql) SelectMany(db *sqlx.DB, models *Model, query Query) error {
 func (m *mssql) SQLView(db *sqlx.DB, models *Model, format map[string]string) error {
 	return errors.Wrap(genericSQLView(db, models, format), "mssql sql view")
 }
+
+func (m *mssql) CreateUpdate(*sqlx.DB, *Model) error {
+	return ErrNotImplmented
+}
+
+func (m *mssql) CreateManyUpdate(*sqlx.DB, *Model) error {
+	return ErrNotImplmented
+}

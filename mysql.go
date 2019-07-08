@@ -62,6 +62,14 @@ func (m *mysql) SelectMany(db *sqlx.DB, models *Model, query Query) error {
 	return errors.Wrap(genericSelectMany(db, models, query), "mysql select many")
 }
 
-func (m *mysql) SQLView(db *sqlx.DB, models *Model, format map[string]string) error {
-	return errors.Wrap(genericSQLView(db, models, format), "mysql sql view")
+func (m *mysql) SQLView(db *sqlx.DB, model *Model, format map[string]string) error {
+	return errors.Wrap(genericSQLView(db, model, format), "mysql sql view")
+}
+
+func (m *mysql) CreateUpdate(db *sqlx.DB, model *Model) error {
+	return errors.Wrap(genericCreateUpdate(db, model), "mysql create update")
+}
+
+func (m *mysql) CreateManyUpdate(db *sqlx.DB, model *Model) error {
+	return errors.Wrap(genericCreateManyUpdate(db, model), "mysql create update many")
 }

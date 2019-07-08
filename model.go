@@ -246,3 +246,14 @@ func (m *Model) iterate(fn modelIterable) error {
 	}
 	return fn(m)
 }
+
+// DuplicateStmt craft duplicate statement
+func (m *Model) DuplicateStmt() string {
+	stmt := `ON DUPLICATE KEY UPDATE `
+	duplicateStmts := []string{}
+	for _, c := range m.ColumnSlice() {
+		duplicateStmts = append(duplicateStmts, fmt.Sprintf("%s=VALUES(%s)", c, c))
+	}
+	stmt += strings.Join(duplicateStmts, ",")
+	return stmt
+}

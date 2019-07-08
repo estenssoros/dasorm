@@ -66,3 +66,11 @@ func (p *postgres) SelectMany(db *sqlx.DB, models *Model, query Query) error {
 func (p *postgres) SQLView(db *sqlx.DB, models *Model, format map[string]string) error {
 	return errors.Wrap(genericSQLView(db, models, format), "postgres sql view")
 }
+
+func (p *postgres) CreateUpdate(*sqlx.DB, *Model) error {
+	return ErrNotImplmented
+}
+
+func (p *postgres) CreateManyUpdate(*sqlx.DB, *Model) error {
+	return ErrNotImplmented
+}
