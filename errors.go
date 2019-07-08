@@ -2,5 +2,5 @@ package dasorm
 
 import "github.com/pkg/errors"
 
-// ErrNotImplmented for things that haven't been implemented
-var ErrNotImplmented = errors.New("not implemented")
+// ErrNotImplemented for things that haven't been implemented
+var ErrNotImplemented = errors.New("not implemented")

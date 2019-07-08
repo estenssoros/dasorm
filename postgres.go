@@ -68,9 +68,9 @@ func (p *postgres) SQLView(db *sqlx.DB, models *Model, format map[string]string)
 }
 
 func (p *postgres) CreateUpdate(*sqlx.DB, *Model) error {
-	return ErrNotImplmented
+	return ErrNotImplemented
 }
 
 func (p *postgres) CreateManyUpdate(*sqlx.DB, *Model) error {
-	return ErrNotImplmented
+	return ErrNotImplemented
 }

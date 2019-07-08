@@ -67,9 +67,9 @@ func (m *mssql) SQLView(db *sqlx.DB, models *Model, format map[string]string) er
 }
 
 func (m *mssql) CreateUpdate(*sqlx.DB, *Model) error {
-	return ErrNotImplmented
+	return ErrNotImplemented
 }
 
 func (m *mssql) CreateManyUpdate(*sqlx.DB, *Model) error {
-	return ErrNotImplmented
+	return ErrNotImplemented
 }
