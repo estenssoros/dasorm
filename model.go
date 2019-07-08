@@ -152,7 +152,7 @@ func (m *Model) touchUpdatedAt() {
 
 func (m *Model) whereID() string {
 	id := m.ID()
-	return fmt.Sprintf("id ='%s'", id)
+	return fmt.Sprintf("id='%s'", id)
 }
 
 func (m *Model) isSlice() bool {
