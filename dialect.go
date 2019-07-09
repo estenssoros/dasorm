@@ -45,7 +45,12 @@ func genericCreateMany(db *sqlx.DB, model *Model) error {
 	tuples := make([]string, v.Len())
 	for i := 0; i < v.Len(); i++ {
 		val := v.Index(i)
-		newModel := &Model{Value: val.Interface()}
+		var newModel *Model
+		if val.Kind() == reflect.Ptr {
+			newModel = &Model{Value: val.Interface()}
+		} else {
+			newModel = &Model{Value: val.Addr().Interface()}
+		}
 		newModel.setID(uuid.Must(uuid.NewV4()))
 		newModel.touchCreatedAt()
 		newModel.touchUpdatedAt()
@@ -173,7 +178,12 @@ func genericCreateManyUpdate(db *sqlx.DB, model *Model) error {
 	tuples := make([]string, v.Len())
 	for i := 0; i < v.Len(); i++ {
 		val := v.Index(i)
-		newModel := &Model{Value: val.Interface()}
+		var newModel *Model
+		if val.Kind() == reflect.Ptr {
+			newModel = &Model{Value: val.Interface()}
+		} else {
+			newModel = &Model{Value: val.Addr().Interface()}
+		}
 		newModel.setID(uuid.Must(uuid.NewV4()))
 		newModel.touchCreatedAt()
 		newModel.touchUpdatedAt()
