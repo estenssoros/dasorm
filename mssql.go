@@ -70,6 +70,10 @@ func (m *mssql) CreateUpdate(*sqlx.DB, *Model) error {
 	return ErrNotImplemented
 }
 
+func (m *mssql) CreateManyTemp(*sqlx.DB, *Model) error {
+	return ErrNotImplemented
+}
+
 func (m *mssql) CreateManyUpdate(*sqlx.DB, *Model) error {
 	return ErrNotImplemented
 }

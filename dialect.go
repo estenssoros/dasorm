@@ -17,6 +17,7 @@ type dialect interface {
 	Create(*sqlx.DB, *Model) error
 	CreateUpdate(*sqlx.DB, *Model) error
 	CreateMany(*sqlx.DB, *Model) error
+	CreateManyTemp(*sqlx.DB, *Model) error
 	CreateManyUpdate(*sqlx.DB, *Model) error
 	Update(*sqlx.DB, *Model) error
 	Destroy(*sqlx.DB, *Model) error
@@ -70,7 +71,7 @@ func genericUpdate(db *sqlx.DB, model *Model) error {
 		return errors.Wrap(err, "updating record")
 	}
 	if numRows, _ := res.RowsAffected(); numRows == 0 {
-		return errors.New("query updated 0 rows")
+		return errors.Errorf("query updated 0 rows: %s", model.whereID())
 	}
 	return nil
 }
@@ -172,7 +173,7 @@ func genericCreateUpdate(db *sqlx.DB, model *Model) error {
 
 func genericCreateManyUpdate(db *sqlx.DB, model *Model) error {
 	if !model.isSlice() {
-		return errors.New("must pass slice1")
+		return errors.New("must pass slice")
 	}
 	v := reflect.Indirect(reflect.ValueOf(model.Value))
 	tuples := make([]string, v.Len())
@@ -190,6 +191,32 @@ func genericCreateManyUpdate(db *sqlx.DB, model *Model) error {
 		tuples[i] = StringTuple(newModel.Value)
 	}
 	query := InsertStmt(model.Value) + strings.Join(tuples, ",") + model.DuplicateStmt()
+	if _, err := db.Exec(query); err != nil {
+		return err
+	}
+	return nil
+}
+
+func genericCreateManyTemp(db *sqlx.DB, model *Model) error {
+	if !model.isSlice() {
+		return errors.New("must pass slice")
+	}
+	v := reflect.Indirect(reflect.ValueOf(model.Value))
+	tuples := make([]string, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		val := v.Index(i)
+		var newModel *Model
+		if val.Kind() == reflect.Ptr {
+			newModel = &Model{Value: val.Interface()}
+		} else {
+			newModel = &Model{Value: val.Addr().Interface()}
+		}
+		newModel.setID(uuid.Must(uuid.NewV4()))
+		newModel.touchCreatedAt()
+		newModel.touchUpdatedAt()
+		tuples[i] = StringTuple(newModel.Value)
+	}
+	query := InsertTempStmt(model.Value) + strings.Join(tuples, ",")
 	if _, err := db.Exec(query); err != nil {
 		return err
 	}

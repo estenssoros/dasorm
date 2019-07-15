@@ -9,6 +9,13 @@ func InsertStmt(t interface{}) string {
 	return fmt.Sprintf(stmt, m.TableName(), m.Columns())
 }
 
+// InsertTempStmt inserts into a temporary table
+func InsertTempStmt(t interface{}) string {
+	m := &Model{Value: t}
+	stmt := "INSERT INTO %s_TEMP (%s) VALUES"
+	return fmt.Sprintf(stmt, m.TableName(), m.Columns())
+}
+
 // ReplaceStmt creates insert replac estatement from struct tags
 func ReplaceStmt(t interface{}) string {
 	m := &Model{Value: t}

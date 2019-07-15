@@ -71,6 +71,10 @@ func (p *postgres) CreateUpdate(*sqlx.DB, *Model) error {
 	return ErrNotImplemented
 }
 
+func (p *postgres) CreateManyTemp(*sqlx.DB, *Model) error {
+	return ErrNotImplemented
+}
+
 func (p *postgres) CreateManyUpdate(*sqlx.DB, *Model) error {
 	return ErrNotImplemented
 }

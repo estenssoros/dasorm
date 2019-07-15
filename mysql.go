@@ -70,6 +70,10 @@ func (m *mysql) CreateUpdate(db *sqlx.DB, model *Model) error {
 	return errors.Wrap(genericCreateUpdate(db, model), "mysql create update")
 }
 
+func (m *mysql) CreateManyTemp(*sqlx.DB, *Model) error {
+	return ErrNotImplemented
+}
+
 func (m *mysql) CreateManyUpdate(db *sqlx.DB, model *Model) error {
 	return errors.Wrap(genericCreateManyUpdate(db, model), "mysql create update many")
 }

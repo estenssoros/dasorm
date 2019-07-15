@@ -229,3 +229,12 @@ func (c *Connection) CreateUpdate(model interface{}) error {
 	}
 	return nil
 }
+
+// CreateManyTemp creates models in a temporary table
+func (c *Connection) CreateManyTemp(model interface{}) error {
+	m := &Model{Value: model}
+	if err := c.Dialect.CreateManyTemp(c.DB, m); err != nil {
+		return err
+	}
+	return nil
+}
