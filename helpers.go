@@ -160,7 +160,7 @@ func FieldToString(v reflect.Value, fType int) string {
 		return "NULL"
 	case NullsStringType:
 		if v := i.(nulls.String); v.Valid {
-			return fmt.Sprintf("'%s'", v.String)
+			return fmt.Sprintf("%s", v.String)
 		}
 		return "NULL"
 	case NullsFloatType:
@@ -419,6 +419,16 @@ func CSVHeaders(c interface{}) []string {
 	return cols
 }
 
+func Columns(c interface{}) []string {
+	m := &Model{Value: c}
+	return m.ColumnSlice()
+}
+
+func TableName(c interface{}) string {
+	m := &Model{Value: c}
+	return m.TableName()
+}
+
 // StructHeaders creates a slice of headers from a struct
 func StructHeaders(v interface{}) []string {
 	structValue := reflect.ValueOf(v)
@@ -439,4 +449,52 @@ func MustFormatMap(s string, m map[string]string) string {
 	} else {
 		return s
 	}
+}
+
+func createSchemaSlice(model *Model) string {
+	v := reflect.Indirect(reflect.ValueOf(model.Value))
+	columns := map[string]*Column{}
+	order := map[int]string{}
+	for i := 0; i < v.Len(); i++ {
+		val := v.Index(i)
+		var newModel *Model
+		if val.Kind() == reflect.Ptr {
+			newModel = &Model{Value: val.Interface()}
+		} else {
+			newModel = &Model{Value: val.Addr().Interface()}
+		}
+		cols := newModel.ToColumns()
+		if len(columns) == 0 {
+			for i, c := range cols {
+				columns[c.Name] = c
+				order[i] = c.Name
+			}
+			continue
+		}
+		for _, c := range cols {
+			columns[c.Name].Update(c)
+		}
+	}
+	out := make([]string, len(columns))
+	for i, name := range order {
+		out[i] = columns[name].String()
+	}
+	return strings.Join(out, "\n, ")
+}
+
+func createSchemaSingleton(model *Model) string {
+	out := []string{}
+	for _, c := range model.ToColumns() {
+		out = append(out, c.String())
+	}
+	return strings.Join(out, "\n, ")
+
+}
+
+func CreateSchema(v interface{}) string {
+	m := Model{Value: v}
+	if m.isSlice() {
+		return createSchemaSlice(&m)
+	}
+	return createSchemaSingleton(&m)
 }
