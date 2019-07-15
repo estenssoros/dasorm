@@ -41,6 +41,8 @@ func ConnectDBConfig(config *Config) (*Connection, error) {
 		return connectPostgres(config)
 	case "microsoft_sql":
 		return connectMSSQL(config)
+	case "snowflake":
+		return connectSnowflake(config)
 	default:
 		return nil, fmt.Errorf("%s dialect not recognized", config.Dialect)
 	}
