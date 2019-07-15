@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/estenssoros/dasorm/nulls"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 )
@@ -124,8 +125,11 @@ func (m *Model) fieldByName(s string) (reflect.Value, error) {
 func (m *Model) setID(i interface{}) {
 	fbn, err := m.fieldByName("ID")
 	if err == nil {
-		if fbn.Interface().(uuid.UUID) == (uuid.UUID{}) {
-			fbn.Set(reflect.ValueOf(i))
+		if uid, ok := fbn.Interface().(uuid.UUID); ok {
+			if uid == (uuid.UUID{}) {
+				fbn.Set(reflect.ValueOf(i))
+			}
+			return
 		}
 	}
 }
@@ -256,4 +260,65 @@ func (m *Model) DuplicateStmt() string {
 	}
 	stmt += strings.Join(duplicateStmts, ",")
 	return stmt
+}
+
+func (m *Model) ToColumns() []*Column {
+	columns := []*Column{}
+	types := reflect.TypeOf(m.Value)
+	values := reflect.ValueOf(m.Value)
+	if types.Kind() == reflect.Ptr {
+		types = types.Elem()
+		values = values.Elem()
+	}
+	numFields := types.NumField()
+	for i := 0; i < numFields; i++ {
+		field := types.Field(i)
+		value := values.Field(i)
+		name := field.Tag.Get("db")
+		if name == "" {
+			continue
+		}
+		col := &Column{
+			Name: name,
+		}
+
+		kind := ValueKind(value)
+		switch kind {
+		case StringKind:
+			col.DataType = varcharColumn
+			col.Length = len(value.String())
+		case IntKind:
+			col.DataType = integerColumn
+		case FloatKind:
+			col.DataType = floatColumn
+		case BoolKind:
+			col.DataType = booleanColumn
+		case OtherKind:
+			fType := FieldType(field)
+			switch fType {
+			case TimeType:
+				col.DataType = datetimeColumn
+			case UUIDType:
+				col.DataType = varcharColumn
+				col.Length = 36
+			case NullsIntType:
+				col.DataType = integerColumn
+			case NullsStringType:
+				col.DataType = varcharColumn
+				if v := value.Interface().(nulls.String); v.Valid {
+					col.Length = len(v.String)
+				}
+			case NullsFloatType:
+				col.DataType = floatColumn
+			case NullsTimeType:
+				col.DataType = datetimeColumn
+			case NullsBoolType:
+				col.DataType = booleanColumn
+			case OtherType:
+				panic(fmt.Sprintf("unknown field type: %v", field.Type))
+			}
+		}
+		columns = append(columns, col)
+	}
+	return columns
 }
