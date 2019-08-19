@@ -57,7 +57,8 @@ func genericCreateMany(db *sqlx.DB, model *Model) error {
 		newModel.touchUpdatedAt()
 		tuples[i] = StringTuple(newModel.Value)
 	}
-	query := InsertStmt(model.Value) + strings.Join(tuples, ",")
+	insertStmt := InsertStmt(model.Value)
+	query := insertStmt + strings.Join(tuples, ",")
 	if _, err := db.Exec(query); err != nil {
 		return err
 	}
