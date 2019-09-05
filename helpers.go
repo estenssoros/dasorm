@@ -84,6 +84,14 @@ const (
 	NullsTimeType = iota
 	// NullsBoolType kind
 	NullsBoolType = iota
+	// SQLNullInt64Type kind from sql package
+	SQLNullInt64Type = iota
+	// SQLNullFloat64Type kind from sql package
+	SQLNullFloat64Type = iota
+	// SQLNullStringType kind from sql package
+	SQLNullStringType = iota
+	// SQLNullBoolType kind from sql package
+	SQLNullBoolType = iota
 	// OtherType kind
 	OtherType = iota
 )
@@ -140,6 +148,14 @@ func FieldType(f reflect.StructField) int {
 		return NullsTimeType
 	case reflect.TypeOf(nulls.Bool{}):
 		return NullsBoolType
+	case reflect.TypeOf(sql.NullInt64{}):
+		return SQLNullInt64Type
+	case reflect.TypeOf(sql.NullFloat64{}):
+		return SQLNullFloat64Type
+	case reflect.TypeOf(sql.NullString{}):
+		return SQLNullStringType
+	case reflect.TypeOf(sql.NullBool{}):
+		return SQLNullBoolType
 	default:
 		return OtherType
 	}
@@ -336,6 +352,39 @@ func StringTuple(c interface{}) string {
 					} else {
 						stringSlice = append(stringSlice, "0")
 					}
+				} else {
+					stringSlice = append(stringSlice, "NULL")
+				}
+			case SQLNullBoolType:
+				if v := value.Interface().(sql.NullBool); v.Valid {
+					if v.Bool {
+						stringSlice = append(stringSlice, "1")
+					} else {
+						stringSlice = append(stringSlice, "0")
+					}
+				} else {
+					stringSlice = append(stringSlice, "NULL")
+				}
+			case SQLNullInt64Type:
+				v := value.Interface().(sql.NullInt64)
+				if v.Valid {
+					stringSlice = append(stringSlice, fmt.Sprintf("%d", v.Int64))
+				} else {
+					stringSlice = append(stringSlice, "NULL")
+				}
+			case SQLNullFloat64Type:
+				if v := value.Interface().(sql.NullFloat64); v.Valid {
+					if math.IsNaN(v.Float64) {
+						stringSlice = append(stringSlice, "NULL")
+					} else {
+						stringSlice = append(stringSlice, fmt.Sprintf("%f", v.Float64))
+					}
+				} else {
+					stringSlice = append(stringSlice, "NULL")
+				}
+			case SQLNullStringType:
+				if v := value.Interface().(sql.NullString); v.Valid {
+					stringSlice = append(stringSlice, fmt.Sprintf("'%s'", EscapeString(v.String)))
 				} else {
 					stringSlice = append(stringSlice, "NULL")
 				}
