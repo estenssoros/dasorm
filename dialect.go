@@ -27,20 +27,27 @@ type dialect interface {
 	SQLView(*sqlx.DB, *Model, map[string]string) error
 }
 
-func genericCreate(db *sqlx.DB, model *Model) error {
+func craftCreate(model *Model) string {
 	model.setID(uuid.Must(uuid.NewV4()))
 	model.touchCreatedAt()
 	model.touchUpdatedAt()
-	query := InsertStmt(model.Value) + StringTuple(model.Value)
-	if _, err := db.Exec(query); err != nil {
-		return err
+	return InsertStmt(model.Value) + StringTuple(model.Value)
+}
+
+func genericExec(db *sqlx.DB, stmt string) error {
+	if _, err := db.Exec(stmt); err != nil {
+		return errors.WithStack(err)
 	}
 	return nil
 }
 
-func genericCreateMany(db *sqlx.DB, model *Model) error {
+func genericCreate(db *sqlx.DB, model *Model) error {
+	return genericExec(db, craftCreate(model))
+}
+
+func craftCreateMany(model *Model) (string, error) {
 	if !model.isSlice() {
-		return errors.New("must pass slice")
+		return "", errors.New("must pass slice")
 	}
 	v := reflect.Indirect(reflect.ValueOf(model.Value))
 	tuples := make([]string, v.Len())
@@ -57,16 +64,23 @@ func genericCreateMany(db *sqlx.DB, model *Model) error {
 		newModel.touchUpdatedAt()
 		tuples[i] = StringTuple(newModel.Value)
 	}
-	insertStmt := InsertStmt(model.Value)
-	query := insertStmt + strings.Join(tuples, ",")
-	if _, err := db.Exec(query); err != nil {
+	return InsertStmt(model.Value) + strings.Join(tuples, ","), nil
+}
+
+func genericCreateMany(db *sqlx.DB, model *Model) error {
+	query, err := craftCreateMany(model)
+	if err != nil {
 		return err
 	}
-	return nil
+	return genericExec(db, query)
+}
+
+func craftUpdate(model *Model) string {
+	return fmt.Sprintf("UPDATE %s SET %s WHERE %s", model.TableName(), model.UpdateString(), model.whereID())
 }
 
 func genericUpdate(db *sqlx.DB, model *Model) error {
-	stmt := fmt.Sprintf("UPDATE %s SET %s WHERE %s", model.TableName(), model.UpdateString(), model.whereID())
+	stmt := craftUpdate(model)
 	res, err := db.NamedExec(stmt, model.Value)
 	if err != nil {
 		return errors.Wrap(err, "updating record")
@@ -77,45 +91,47 @@ func genericUpdate(db *sqlx.DB, model *Model) error {
 	return nil
 }
 
-func genericDestroy(db *sqlx.DB, model *Model) error {
-	stmt := fmt.Sprintf("DELETE FROM %s WHERE %s", model.TableName(), model.whereID())
-	if err := genericExec(db, stmt); err != nil {
-		return errors.Wrap(err, "deleting record")
-	}
-	return nil
+func craftDestroy(model *Model) string {
+	return fmt.Sprintf("DELETE FROM %s WHERE %s", model.TableName(), model.whereID())
 }
 
-func genericDestroyMany(db *sqlx.DB, model *Model) error {
+func genericDestroy(db *sqlx.DB, model *Model) error {
+	return genericExec(db, craftDestroy(model))
+}
+
+func craftDestroyMany(model *Model) (string, error) {
 	ids := []string{}
 	if !model.isSlice() {
-		return errors.New("must supply slice")
+		return "", errors.New("must supply slice")
 	}
 	v := reflect.Indirect(reflect.ValueOf(model.Value))
 	for i := 0; i < v.Len(); i++ {
 		val := v.Index(i)
-		newModel := &Model{Value: val.Addr().Interface()}
+		var newModel *Model
+		if val.Kind() == reflect.Ptr {
+			newModel = &Model{Value: val.Interface()}
+		} else {
+			newModel = &Model{Value: val.Addr().Interface()}
+		}
 		fbn, err := newModel.fieldByName("ID")
 		if err != nil {
-			return err
+			return "", err
 		}
 		id, ok := fbn.Interface().(uuid.UUID)
 		if !ok {
-			return errors.New("error converting value to uuid")
+			return "", errors.New("error converting value to uuid")
 		}
 		ids = append(ids, fmt.Sprintf("'%s'", id))
 	}
-	stmt := fmt.Sprintf("DELETE FROM %s WHERE id IN (%s)", model.TableName(), strings.Join(ids, ","))
-	if _, err := db.Exec(stmt); err != nil {
-		return errors.Wrap(err, "deleting records")
-	}
-	return nil
+	return fmt.Sprintf("DELETE FROM %s WHERE id IN (%s)", model.TableName(), strings.Join(ids, ",")), nil
 }
 
-func genericExec(db *sqlx.DB, stmt string) error {
-	if _, err := db.Exec(stmt); err != nil {
-		return errors.WithStack(err)
+func genericDestroyMany(db *sqlx.DB, model *Model) error {
+	query, err := craftDestroyMany(model)
+	if err != nil {
+		return errors.Wrap(err, "craft destroy many")
 	}
-	return nil
+	return genericExec(db, query)
 }
 
 func genericSelectOne(db *sqlx.DB, model *Model, query Query) error {
@@ -134,47 +150,86 @@ func genericSelectMany(db *sqlx.DB, models *Model, query Query) error {
 	return nil
 }
 
-func genericSQLView(db *sqlx.DB, models *Model, format map[string]string) error {
+func craftSQLView(model *Model, format map[string]string) (string, error) {
 	var (
 		err error
 		sql string
 	)
-	sql, err = models.SQLView()
+
+	sql, err = model.SQLView()
 	if err != nil {
-		return err
+		return "", err
 	}
 	if format != nil {
 		sql, err = interpol.WithMap(sql, format)
 		if err != nil {
-			return errors.Wrap(err, "formatting sql")
+			return "", errors.Wrap(err, "formatting sql")
 		}
 	}
-	if models.isSlice() {
-		if err := db.Select(models.Value, sql); err != nil {
+	return sql, nil
+}
+
+func genericSQLView(db *sqlx.DB, model *Model, format map[string]string) error {
+	sql, err := craftSQLView(model, format)
+	if err != nil {
+		return err
+	}
+	if model.isSlice() {
+		if err := db.Select(model.Value, sql); err != nil {
 			return err
 		}
 	} else {
-		if err := db.Get(models.Value, sql); err != nil {
+		if err := db.Get(model.Value, sql); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func genericCreateUpdate(db *sqlx.DB, model *Model) error {
+func craftCreateUpdate(model *Model) string {
 	model.setID(uuid.Must(uuid.NewV4()))
 	model.touchCreatedAt()
 	model.touchUpdatedAt()
-	query := InsertStmt(model.Value) + StringTuple(model.Value) + model.DuplicateStmt()
-	if _, err := db.Exec(query); err != nil {
-		return err
+	return InsertStmt(model.Value) + StringTuple(model.Value) + model.DuplicateStmt()
+}
+
+func genericCreateUpdate(db *sqlx.DB, model *Model) error {
+	return genericExec(db, craftCreateUpdate(model))
+}
+
+func craftCreateManyUpdate(model *Model) (string, error) {
+	if !model.isSlice() {
+		return "", errors.New("must pass slice")
 	}
-	return nil
+	v := reflect.Indirect(reflect.ValueOf(model.Value))
+	tuples := make([]string, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		val := v.Index(i)
+		var newModel *Model
+		if val.Kind() == reflect.Ptr {
+			newModel = &Model{Value: val.Interface()}
+		} else {
+			newModel = &Model{Value: val.Addr().Interface()}
+		}
+		newModel.setID(uuid.Must(uuid.NewV4()))
+		newModel.touchCreatedAt()
+		newModel.touchUpdatedAt()
+		tuples[i] = StringTuple(newModel.Value)
+	}
+	return InsertStmt(model.Value) + strings.Join(tuples, ",") + model.DuplicateStmt(), nil
 }
 
 func genericCreateManyUpdate(db *sqlx.DB, model *Model) error {
+	query, err := craftCreateManyUpdate(model)
+	if err != nil {
+		return err
+	}
+	return genericExec(db, query)
+}
+
+func craftCreateManyTemp(model *Model) (string, error) {
 	if !model.isSlice() {
-		return errors.New("must pass slice")
+		return "", errors.New("must pass slice")
 	}
 	v := reflect.Indirect(reflect.ValueOf(model.Value))
 	tuples := make([]string, v.Len())
@@ -191,35 +246,13 @@ func genericCreateManyUpdate(db *sqlx.DB, model *Model) error {
 		newModel.touchUpdatedAt()
 		tuples[i] = StringTuple(newModel.Value)
 	}
-	query := InsertStmt(model.Value) + strings.Join(tuples, ",") + model.DuplicateStmt()
-	if _, err := db.Exec(query); err != nil {
-		return err
-	}
-	return nil
+	return InsertTempStmt(model.Value) + strings.Join(tuples, ","), nil
 }
 
 func genericCreateManyTemp(db *sqlx.DB, model *Model) error {
-	if !model.isSlice() {
-		return errors.New("must pass slice")
-	}
-	v := reflect.Indirect(reflect.ValueOf(model.Value))
-	tuples := make([]string, v.Len())
-	for i := 0; i < v.Len(); i++ {
-		val := v.Index(i)
-		var newModel *Model
-		if val.Kind() == reflect.Ptr {
-			newModel = &Model{Value: val.Interface()}
-		} else {
-			newModel = &Model{Value: val.Addr().Interface()}
-		}
-		newModel.setID(uuid.Must(uuid.NewV4()))
-		newModel.touchCreatedAt()
-		newModel.touchUpdatedAt()
-		tuples[i] = StringTuple(newModel.Value)
-	}
-	query := InsertTempStmt(model.Value) + strings.Join(tuples, ",")
-	if _, err := db.Exec(query); err != nil {
+	query, err := craftCreateManyTemp(model)
+	if err != nil {
 		return err
 	}
-	return nil
+	return genericExec(db, query)
 }
