@@ -133,7 +133,7 @@ func (c *Connection) QueryRowContext(ctx context.Context, query string, args ...
 	return c.DB.QueryRowContext(ctx, query, args...)
 }
 
-// QueryRowContext wraps the QueryRowContext method
+// QueryRow wraps the QueryRowContext method
 func (c *Connection) QueryRow(query string, args ...interface{}) *sql.Row {
 	return c.DB.QueryRow(query, args...)
 }
@@ -160,6 +160,7 @@ func (c *Connection) WriteTuples(insertStmt string, tuples []string) error {
 	return nil
 }
 
+// DialectName return the dialect name
 func (c *Connection) DialectName() string {
 	return c.Dialect.Name()
 }
