@@ -170,7 +170,7 @@ func FieldToString(v reflect.Value, fType int) string {
 		return "NULL"
 	case NullsTimeType:
 		if v := i.(nulls.Time); v.Valid {
-			return v.Time.Format("'2006-01-02 15:04:05'")
+			return v.Time.Format(timeFmt)
 		}
 		return "NULL"
 	case NullsBoolType:
@@ -324,7 +324,7 @@ func StringTuple(c interface{}) string {
 				}
 			case NullsTimeType:
 				if v := value.Interface().(nulls.Time); v.Valid {
-					stringSlice = append(stringSlice, v.Time.Format("'2006-01-02 15:04:05'"))
+					stringSlice = append(stringSlice, "'"+timeFmt+"'")
 
 				} else {
 					stringSlice = append(stringSlice, "NULL")
