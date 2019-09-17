@@ -85,7 +85,7 @@ func (m *Model) SQLView() (string, error) {
 	if n, ok := m.Value.(SQLViewAble); ok {
 		return n.SQLView(), nil
 	}
-	return m.sqlView(reflect.TypeOf(m.Value))
+	return "", errors.New("model does not have sql view")
 }
 
 // typeName retrieves the name of an array element
