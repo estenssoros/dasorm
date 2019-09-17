@@ -5,7 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/estenssoros/dasorm/nulls"
+	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 type TestStruct struct {
@@ -150,4 +153,50 @@ func TestCSVHeaders(t *testing.T) {
 			t.Errorf("have: %s, want: %s", want, have)
 		}
 	}
+}
+
+func TestIsErrorNoRows(t *testing.T) {
+	assert.Equal(t, true, IsErrorNoRows(errors.New("no rows in result set")))
+}
+
+func TestEscapeString(t *testing.T) {
+	testString := `0\n\r\\\'\032`
+	assert.Equal(t, `0\\n\\r\\\\\\\'\\032`, EscapeString(testString))
+}
+
+func TestFieldTypeNulls(t *testing.T) {
+	test := struct {
+		I nulls.Int
+		S nulls.String
+		F nulls.Float64
+		T nulls.Time
+		B nulls.Bool
+	}{
+		I: nulls.Int{},
+		S: nulls.String{},
+		F: nulls.Float64{},
+		T: nulls.Time{},
+		B: nulls.Bool{},
+	}
+	have := StringSlice(test)
+	assert.Equal(t, []string{"NULL", "NULL", "NULL", "NULL", "NULL"}, have)
+}
+
+func TestFieldTypeNullsValid(t *testing.T) {
+	now := time.Now()
+	test := struct {
+		I nulls.Int
+		S nulls.String
+		F nulls.Float64
+		T nulls.Time
+		B nulls.Bool
+	}{
+		I: nulls.NewInt(1),
+		S: nulls.NewString("asdf"),
+		F: nulls.NewFloat64(1),
+		T: nulls.NewTime(now),
+		B: nulls.NewBool(true),
+	}
+	have := StringSlice(test)
+	assert.Equal(t, []string{"1", "asdf", "1.000000", now.Format(timeFmt), "1"}, have)
 }
