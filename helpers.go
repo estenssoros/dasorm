@@ -324,7 +324,7 @@ func StringTuple(c interface{}) string {
 				}
 			case NullsTimeType:
 				if v := value.Interface().(nulls.Time); v.Valid {
-					stringSlice = append(stringSlice, "'"+timeFmt+"'")
+					stringSlice = append(stringSlice, "'"+v.Time.Format(timeFmt)+"'")
 
 				} else {
 					stringSlice = append(stringSlice, "NULL")
