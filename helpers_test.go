@@ -200,3 +200,45 @@ func TestFieldTypeNullsValid(t *testing.T) {
 	have := StringSlice(test)
 	assert.Equal(t, []string{"1", "asdf", "1.000000", now.Format(timeFmt), "1"}, have)
 }
+
+type testStuct001 struct {
+	ID          uuid.UUID    `json:"id" db:"id"`
+	IMO         nulls.Int    `json:"imo" db:"imo"`
+	CreatedAt   time.Time    `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time    `json:"updated_at" db:"updated_at"`
+	CaseID      uuid.UUID    `json:"case_id" db:"case_id"`
+	Name        nulls.String `json:"name" db:"name"`
+	Year        nulls.Int    `json:"year" db:"year"`
+	Assumed     nulls.Int    `json:"assumed" db:"assumed"`
+	AddDays     nulls.Int    `json:"add_days" db:"add_days"`
+	AddDate     nulls.Time   `json:"add_date" db:"add_date"`
+	AddNotes    nulls.String `json:"add_notes" db:"add_notes"`
+	Rate        nulls.Int    `json:"rate,omitempty"`
+	Utilization nulls.Int    `json:"utilization,omitempty"`
+	SpotID      uuid.UUID    `json:"spot_id"`
+	OffhireID   uuid.UUID    `json:"offhire_id"`
+}
+
+func TestStruct001(t *testing.T) {
+	id1 := uuid.Must(uuid.NewV4())
+	id2 := uuid.Must(uuid.NewV4())
+	ts := time.Now()
+	t001 := &testStuct001{
+		CaseID:      id2,
+		ID:          id1,
+		Name:        nulls.NewString("asdf"),
+		Year:        nulls.NewInt(ts.Year()),
+		IMO:         nulls.NewInt(69),
+		Assumed:     nulls.NewInt(7),
+		AddDays:     nulls.NewInt(7),
+		AddDate:     nulls.NewTime(ts),
+		AddNotes:    nulls.NewString("string"),
+		Rate:        nulls.NewInt(7),
+		Utilization: nulls.NewInt(7),
+	}
+	insert := `INSERT INTO testStuct001 (id,imo,created_at,updated_at,case_id,name,year,assumed,add_days,add_date,add_notes) VALUES`
+	assert.Equal(t, insert, InsertStmt(t001))
+	values := `('%s',69,'0001-01-01 00:00:00','0001-01-01 00:00:00','%s','asdf',2019,7,7,'%s','string')`
+	values = fmt.Sprintf(values, id1, id2, ts.Format(timeFmt))
+	assert.Equal(t, values, StringTuple(t001))
+}
