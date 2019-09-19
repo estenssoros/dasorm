@@ -136,19 +136,19 @@ type AWSCreds struct {
 }
 
 //GetAWSCreds returns the creds for logging
-func GetAWSCreds(service string) *AWSCreds {
+func GetAWSCreds(service string) (*AWSCreds, error) {
 	client, err := connectVault()
 	if err != nil {
-		panic(err)
+		return nil, errors.Wrap(err, "connect vault")
 	}
 
 	secrets, err := client.Logical().Read(fmt.Sprintf("secret/data/%s", service))
 	if err != nil {
-		panic(err)
+		return nil, errors.Wrap(err, "client read")
 	}
 
 	if secrets == nil {
-		panic(fmt.Errorf("vault errror: no data at: %s", service))
+		return nil, fmt.Errorf("vault errror: no data at: %s", service)
 	}
 
 	secret := secrets.Data["data"].(map[string]interface{})
@@ -165,5 +165,5 @@ func GetAWSCreds(service string) *AWSCreds {
 		creds.Key = val.(string)
 	}
 
-	return creds
+	return creds, nil
 }
