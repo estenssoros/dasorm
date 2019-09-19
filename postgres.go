@@ -20,7 +20,7 @@ func connectPostgres(creds *Config) (*Connection, error) {
 		return nil, err
 	}
 	return &Connection{
-		DB:      db,
+		DB:      &DB{DB: db},
 		Dialect: &postgres{},
 	}, nil
 }
@@ -35,46 +35,46 @@ func (p *postgres) TranslateSQL(sql string) string {
 	return sql
 }
 
-func (p *postgres) Create(db *sqlx.DB, model *Model) error {
+func (p *postgres) Create(db *DB, model *Model) error {
 	return errors.Wrap(genericCreate(db, model), "postgres create")
 }
 
-func (p *postgres) CreateMany(db *sqlx.DB, model *Model) error {
+func (p *postgres) CreateMany(db *DB, model *Model) error {
 	return errors.Wrap(genericCreateMany(db, model), "postgres create")
 }
 
-func (p *postgres) Update(db *sqlx.DB, model *Model) error {
+func (p *postgres) Update(db *DB, model *Model) error {
 	return errors.Wrap(genericUpdate(db, model), "postgres update")
 }
 
-func (p *postgres) Destroy(db *sqlx.DB, model *Model) error {
+func (p *postgres) Destroy(db *DB, model *Model) error {
 	return errors.Wrap(genericDestroy(db, model), "postgres destroy")
 }
 
-func (p *postgres) DestroyMany(db *sqlx.DB, model *Model) error {
+func (p *postgres) DestroyMany(db *DB, model *Model) error {
 	return errors.Wrap(genericDestroyMany(db, model), "postgres destroy many")
 }
 
-func (p *postgres) SelectOne(db *sqlx.DB, model *Model, query Query) error {
+func (p *postgres) SelectOne(db *DB, model *Model, query Query) error {
 	return errors.Wrap(genericSelectOne(db, model, query), "postgres select one")
 }
 
-func (p *postgres) SelectMany(db *sqlx.DB, models *Model, query Query) error {
+func (p *postgres) SelectMany(db *DB, models *Model, query Query) error {
 	return errors.Wrap(genericSelectMany(db, models, query), "postgres select many")
 }
 
-func (p *postgres) SQLView(db *sqlx.DB, models *Model, format map[string]string) error {
+func (p *postgres) SQLView(db *DB, models *Model, format map[string]string) error {
 	return errors.Wrap(genericSQLView(db, models, format), "postgres sql view")
 }
 
-func (p *postgres) CreateUpdate(*sqlx.DB, *Model) error {
+func (p *postgres) CreateUpdate(*DB, *Model) error {
 	return ErrNotImplemented
 }
 
-func (p *postgres) CreateManyTemp(*sqlx.DB, *Model) error {
+func (p *postgres) CreateManyTemp(*DB, *Model) error {
 	return ErrNotImplemented
 }
 
-func (p *postgres) CreateManyUpdate(*sqlx.DB, *Model) error {
+func (p *postgres) CreateManyUpdate(*DB, *Model) error {
 	return ErrNotImplemented
 }

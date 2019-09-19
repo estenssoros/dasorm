@@ -11,15 +11,26 @@ import (
 	"github.com/pkg/errors"
 )
 
+// DB waraps sqlx.DB
+type DB struct {
+	*sqlx.DB
+	Debug bool
+}
+
 // Connection holds a pointer to the database connection
 type Connection struct {
-	DB      *sqlx.DB
+	DB      *DB
 	Dialect dialect
 }
 
 // Close wraps db.close
 func (c *Connection) Close() {
 	c.DB.Close()
+}
+
+// Debug sets the db to debug
+func (c *Connection) Debug(d bool) {
+	c.DB.Debug = d
 }
 
 // Config holds database information
