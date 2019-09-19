@@ -262,6 +262,7 @@ func (m *Model) DuplicateStmt() string {
 	return stmt
 }
 
+// ToColumns converts a model to a columns schema
 func (m *Model) ToColumns() []*Column {
 	columns := []*Column{}
 	types := reflect.TypeOf(m.Value)
@@ -321,4 +322,27 @@ func (m *Model) ToColumns() []*Column {
 		columns = append(columns, col)
 	}
 	return columns
+}
+
+// ToTuples converts a model to string tuples
+func (m *Model) ToTuples() ([]string, error) {
+	if !m.isSlice() {
+		return nil, errors.New("must pass slice")
+	}
+	v := reflect.Indirect(reflect.ValueOf(m.Value))
+	tuples := make([]string, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		val := v.Index(i)
+		var newModel *Model
+		if val.Kind() == reflect.Ptr {
+			newModel = &Model{Value: val.Interface()}
+		} else {
+			newModel = &Model{Value: val.Addr().Interface()}
+		}
+		newModel.setID(uuid.Must(uuid.NewV4()))
+		newModel.touchCreatedAt()
+		newModel.touchUpdatedAt()
+		tuples[i] = StringTuple(newModel.Value)
+	}
+	return tuples, nil
 }
