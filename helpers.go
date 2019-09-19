@@ -419,11 +419,13 @@ func CSVHeaders(c interface{}) []string {
 	return cols
 }
 
+// Columns gts the columns from an interface
 func Columns(c interface{}) []string {
 	m := &Model{Value: c}
 	return m.ColumnSlice()
 }
 
+// TableName finds the tablename for a struct
 func TableName(c interface{}) string {
 	m := &Model{Value: c}
 	return m.TableName()
@@ -491,10 +493,17 @@ func createSchemaSingleton(model *Model) string {
 
 }
 
+// CreateSchema creates a schema from an interface
 func CreateSchema(v interface{}) string {
 	m := Model{Value: v}
 	if m.isSlice() {
 		return createSchemaSlice(&m)
 	}
 	return createSchemaSingleton(&m)
+}
+
+// ToTuples converts an interface to tuples
+func ToTuples(v interface{}) ([]string, error) {
+	m := &Model{v}
+	return m.ToTuples()
 }
