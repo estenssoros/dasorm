@@ -242,3 +242,44 @@ func TestStruct001(t *testing.T) {
 	values = fmt.Sprintf(values, id1, id2, ts.Format(timeFmt))
 	assert.Equal(t, values, StringTuple(t001))
 }
+
+type TestStruct002 struct {
+	ID         uuid.UUID
+	Time       time.Time
+	Name       string
+	IMO        int
+	Value      float64
+	Abool      bool
+	NullInt    nulls.Int
+	NullString nulls.String
+	NullFloat  nulls.Float64
+	NullTime   nulls.Time
+	NullBool   nulls.Bool
+}
+
+func TestDecodeSlice(t *testing.T) {
+	now := time.Now()
+	id := uuid.Must(uuid.NewV4())
+	t002 := &TestStruct002{}
+	d := []string{
+		id.String(),
+		now.Format(time.RFC3339),
+		"Seaspan Chiwan",
+		"91234991",
+		"131234.4321",
+		"1",
+		"",
+		"",
+		"",
+		"",
+		"",
+	}
+	if err := DecodeSlice(d, t002); err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t, t002.IMO, 91234991)
+	assert.Equal(t, t002.ID, id)
+	assert.Equal(t, t002.Value, 131234.4321)
+	assert.Equal(t, t002.Abool, true)
+	fmt.Println(t002)
+}
