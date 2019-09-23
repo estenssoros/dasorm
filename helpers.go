@@ -6,9 +6,11 @@ import (
 	"math"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/araddon/dateparse"
 	"github.com/estenssoros/dasorm/nulls"
 	interpol "github.com/imkira/go-interpol"
 	"github.com/pkg/errors"
@@ -506,4 +508,113 @@ func CreateSchema(v interface{}) string {
 func ToTuples(v interface{}) ([]string, error) {
 	m := &Model{v}
 	return m.ToTuples()
+}
+
+// DecodeSlice attempts to decode a string slice int an struct
+func DecodeSlice(d []string, v interface{}) error {
+	fields := reflect.TypeOf(v)
+	values := reflect.ValueOf(v)
+	if values.Kind() == reflect.Ptr {
+		values = values.Elem()
+		fields = fields.Elem()
+	}
+	if values.Kind() != reflect.Struct {
+		return errors.New("must pass struct")
+	}
+	if want, have := len(d), fields.NumField(); want != have {
+		return errors.Errorf("dimension mismatch: have: %d want: %d", have, want)
+	}
+	for i := 0; i < fields.NumField(); i++ {
+		field := fields.Field(i)
+		value := values.Field(i)
+		kind := ValueKind(value)
+		switch kind {
+		case StringKind:
+			value.SetString(d[i])
+		case IntKind:
+			x, err := strconv.Atoi(d[i])
+			if err != nil {
+				return errors.Wrap(err, "conver to int")
+			}
+			value.Set(reflect.ValueOf(x))
+		case FloatKind:
+			x, err := strconv.ParseFloat(d[i], 10)
+			if err != nil {
+				return errors.Wrap(err, "parse float")
+			}
+			value.Set(reflect.ValueOf(x))
+		case BoolKind:
+			switch strings.ToLower(d[i]) {
+			case "1", "true":
+				value.Set(reflect.ValueOf(true))
+			case "0", "false":
+				value.Set(reflect.ValueOf(false))
+			}
+		case OtherKind:
+			fieldType := FieldType(field)
+			switch fieldType {
+			case TimeType:
+				t, err := dateparse.ParseAny(d[i])
+				if err != nil {
+					return errors.New("count not parse date")
+				}
+				value.Set(reflect.ValueOf(t))
+			case UUIDType:
+				uid, err := uuid.FromString(d[i])
+				if err != nil {
+					return errors.Wrap(err, "parse uuid")
+				}
+				value.Set(reflect.ValueOf(uid))
+			case NullsIntType:
+				v := nulls.Int{}
+				if d[i] != "" {
+					x, err := strconv.Atoi(d[i])
+					if err != nil {
+						return errors.Wrap(err, "parsing int")
+					}
+					v = nulls.NewInt(x)
+				}
+				value.Set(reflect.ValueOf(v))
+			case NullsStringType:
+				v := nulls.String{}
+				if d[i] != "" {
+					v = nulls.NewString(d[i])
+				}
+				value.Set(reflect.ValueOf(v))
+			case NullsFloatType:
+				v := nulls.Float64{}
+				if d[i] != "" {
+					f, err := strconv.ParseFloat(d[i], 10)
+					if err != nil {
+						return errors.Wrap(err, "parse float")
+					}
+					v = nulls.NewFloat64(f)
+				}
+				value.Set(reflect.ValueOf(v))
+			case NullsTimeType:
+				v := nulls.Time{}
+				if d[i] != "" {
+					t, err := dateparse.ParseAny(d[i])
+					if err != nil {
+						return errors.Wrap(err, "date parse")
+					}
+					v = nulls.NewTime(t)
+				}
+				value.Set(reflect.ValueOf(v))
+			case NullsBoolType:
+				v := nulls.Bool{}
+				if d[i] != "" {
+					b, err := strconv.ParseBool(d[i])
+					if err != nil {
+						return errors.Wrap(err, "parse bool")
+					}
+					v = nulls.NewBool(b)
+				}
+				value.Set(reflect.ValueOf(v))
+			case OtherType:
+				return errors.Errorf("unknown field type %v", field.Type)
+			}
+		}
+	}
+	return nil
 }
