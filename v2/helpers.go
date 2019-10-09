@@ -112,14 +112,14 @@ func ValueToString(v reflect.Value, kind int) string {
 	case StringKind:
 		return v.String()
 	case IntKind:
-		return fmt.Sprintf("%d", v.Int())
+		return strconv.FormatInt(v.Int(), 10)
 	case FloatKind:
 		if f := v.Float(); math.IsNaN(f) {
 			return "NULL"
 		}
-		return fmt.Sprintf("%f", v.Float())
+		return strconv.FormatFloat(v.Float(), 'f', -1, 64)
 	case BoolKind:
-		return fmt.Sprintf("%v", v.Bool())
+		return strconv.FormatBool(v.Bool())
 	default:
 		return ""
 	}
@@ -157,17 +157,17 @@ func FieldToString(v reflect.Value, fType int) string {
 		return i.(uuid.UUID).String()
 	case NullsIntType:
 		if v := i.(nulls.Int); v.Valid {
-			return fmt.Sprintf("%d", v.Int)
+			return strconv.FormatInt(int64(v.Int), 10)
 		}
 		return "NULL"
 	case NullsStringType:
 		if v := i.(nulls.String); v.Valid {
-			return fmt.Sprintf("%s", v.String)
+			return v.String
 		}
 		return "NULL"
 	case NullsFloatType:
 		if v := i.(nulls.Float64); v.Valid {
-			return fmt.Sprintf("%f", v.Float64)
+			return strconv.FormatFloat(v.Float64, 'f', -1, 64)
 		}
 		return "NULL"
 	case NullsTimeType:
@@ -304,7 +304,7 @@ func StringTuple(c interface{}) string {
 			case NullsIntType:
 				v := value.Interface().(nulls.Int)
 				if v.Valid {
-					stringSlice = append(stringSlice, fmt.Sprintf("%d", v.Int))
+					stringSlice = append(stringSlice, strconv.FormatInt(int64(v.Int), 10))
 				} else {
 					stringSlice = append(stringSlice, "NULL")
 				}
@@ -319,7 +319,7 @@ func StringTuple(c interface{}) string {
 					if math.IsNaN(v.Float64) {
 						stringSlice = append(stringSlice, "NULL")
 					} else {
-						stringSlice = append(stringSlice, fmt.Sprintf("%f", v.Float64))
+						stringSlice = append(stringSlice, strconv.FormatFloat(v.Float64, 'f', -1, 64))
 					}
 				} else {
 					stringSlice = append(stringSlice, "NULL")
