@@ -13,12 +13,12 @@ import (
 // DB waraps sqlx.DB
 type DB struct {
 	*sqlx.DB
-	Debug bool
+	debug bool
 }
 
 // Connection holds a pointer to the database connection
 type Connection struct {
-	DB      *DB
+	*DB
 	Dialect dialect
 }
 
@@ -29,7 +29,7 @@ func (c *Connection) Close() {
 
 // Debug sets the db to debug
 func (c *Connection) Debug(d bool) {
-	c.DB.Debug = d
+	c.debug = d
 }
 
 // connectDBHandler reads creds from service and provides databse connection
