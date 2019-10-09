@@ -377,6 +377,7 @@ type table interface {
 
 // Scanner returns an slice of interface to a struct
 // rows.Scan(seaspandb.Scanner(&m)...)
+// this only scans fields with the struct tag "db"
 func Scanner(u interface{}) []interface{} {
 	val := reflect.ValueOf(u).Elem()
 	typ := val.Type()
