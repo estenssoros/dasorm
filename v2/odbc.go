@@ -10,7 +10,7 @@ func connectODBC(creds *Config) (*Connection, error) {
 	connectionURL := fmt.Sprintf("DSN=%s;UID=%s;password=%s", creds.DSN, creds.User, creds.Password)
 	db, err := connectURL("odbc", connectionURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "connect url")
+		return nil, errors.Wrap(err, "connect odbc")
 	}
 	return &Connection{
 		DB:      &DB{DB: db},
@@ -70,4 +70,8 @@ func (o *odbc) CreateManyTemp(*DB, *Model) error {
 
 func (o *odbc) CreateManyUpdate(db *DB, model *Model) error {
 	return errors.Wrap(genericCreateManyUpdate(db, model), "odbc create update many")
+}
+
+func (o *odbc) Truncate(db *DB, model *Model) error {
+	return errors.Wrap(genericTruncate(db, model), "odbc truncate")
 }

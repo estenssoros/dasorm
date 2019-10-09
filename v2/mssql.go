@@ -10,7 +10,7 @@ func connectMSSQL(creds *Config) (*Connection, error) {
 	connectionURL := fmt.Sprintf("sqlserver://%s:%s@%s?database=%s", creds.User, creds.Password, creds.Host, creds.Database)
 	db, err := connectURL("mssql", connectionURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "connect url")
+		return nil, errors.Wrap(err, "connect sqlserver")
 	}
 	return &Connection{
 		DB:      &DB{DB: db},
@@ -70,4 +70,8 @@ func (m *mssql) CreateManyTemp(*DB, *Model) error {
 
 func (m *mssql) CreateManyUpdate(*DB, *Model) error {
 	return ErrNotImplemented
+}
+
+func (m *mssql) Truncate(db *DB, model *Model) error {
+	return errors.Wrap(genericTruncate(db, model), "mssql truncate")
 }

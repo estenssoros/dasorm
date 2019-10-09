@@ -24,6 +24,7 @@ type dialect interface {
 	SelectOne(*DB, *Model, Query) error
 	SelectMany(*DB, *Model, Query) error
 	SQLView(*DB, *Model, map[string]string) error
+	Truncate(*DB, *Model) error
 }
 
 func craftCreate(model *Model) string {
@@ -34,7 +35,7 @@ func craftCreate(model *Model) string {
 }
 
 func genericExec(db *DB, stmt string) error {
-	if db.Debug {
+	if db.debug {
 		fmt.Println(stmt)
 	}
 	if _, err := db.Exec(stmt); err != nil {
@@ -69,7 +70,7 @@ func craftUpdate(model *Model) string {
 
 func genericUpdate(db *DB, model *Model) error {
 	stmt := craftUpdate(model)
-	if db.Debug {
+	if db.debug {
 		fmt.Println(stmt)
 	}
 	res, err := db.NamedExec(stmt, model.Value)
@@ -127,7 +128,7 @@ func genericDestroyMany(db *DB, model *Model) error {
 
 func genericSelectOne(db *DB, model *Model, query Query) error {
 	sql, args := query.ToSQL(model)
-	if db.Debug {
+	if db.debug {
 		fmt.Println(sql)
 	}
 	if err := db.Get(model.Value, sql, args...); err != nil {
@@ -138,7 +139,7 @@ func genericSelectOne(db *DB, model *Model, query Query) error {
 
 func genericSelectMany(db *DB, models *Model, query Query) error {
 	sql, args := query.ToSQL(models)
-	if db.Debug {
+	if db.debug {
 		fmt.Println(sql)
 	}
 	if err := db.Select(models.Value, sql, args...); err != nil {
@@ -171,7 +172,7 @@ func genericSQLView(db *DB, model *Model, format map[string]string) error {
 	if err != nil {
 		return err
 	}
-	if db.Debug {
+	if db.debug {
 		fmt.Println(sql)
 	}
 	if model.isSlice() {
@@ -223,8 +224,15 @@ func craftCreateManyTemp(model *Model) (string, error) {
 
 func genericCreateManyTemp(db *DB, model *Model) error {
 	query, err := craftCreateManyTemp(model)
+	if db.debug {
+		fmt.Println(query)
+	}
 	if err != nil {
-		return err
+		return errors.Wrap(err, "craft create many temp")
 	}
 	return genericExec(db, query)
+}
+
+func genericTruncate(db *DB, model *Model) error {
+	return genericExec(db, TruncateStmt(model.Value))
 }

@@ -10,7 +10,7 @@ func connectSnowflake(creds *Config) (*Connection, error) {
 	connectionURL := fmt.Sprintf("%s:%s@%s/%s", creds.User, creds.Password, creds.Host, creds.Database)
 	db, err := connectURL("snowflake", connectionURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "connect url")
+		return nil, errors.Wrap(err, "connect snowflake")
 	}
 	return &Connection{
 		DB:      &DB{DB: db},
@@ -69,4 +69,8 @@ func (s *snowflake) CreateManyTemp(db *DB, model *Model) error {
 
 func (s *snowflake) CreateManyUpdate(db *DB, model *Model) error {
 	return errors.Wrap(genericCreateManyUpdate(db, model), "snowflake create update many")
+}
+
+func (ms *snowflake) Truncate(db *DB, model *Model) error {
+	return errors.Wrap(genericTruncate(db, model), "snowflake truncate")
 }

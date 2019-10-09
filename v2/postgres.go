@@ -11,7 +11,7 @@ func connectPostgres(creds *Config) (*Connection, error) {
 		creds.Host, 5432, creds.User, creds.Password, creds.Database)
 	db, err := connectURL("postgres", connectionURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "connect url")
+		return nil, errors.Wrap(err, "connect postgres")
 	}
 	return &Connection{
 		DB:      &DB{DB: db},
@@ -71,4 +71,8 @@ func (p *postgres) CreateManyTemp(*DB, *Model) error {
 
 func (p *postgres) CreateManyUpdate(*DB, *Model) error {
 	return ErrNotImplemented
+}
+
+func (p *postgres) Truncate(db *DB, model *Model) error {
+	return errors.Wrap(genericTruncate(db, model), "postgres truncate")
 }
