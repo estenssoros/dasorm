@@ -56,11 +56,6 @@ func EscapeString(sql string) string {
 	return string(dest)
 }
 
-// StringSlice converts all fields of a struct to a string slice
-func (c *Connection) StringSlice(v interface{}) []string {
-	return StringSlice(v)
-}
-
 const (
 	// StringKind kind
 	StringKind = 0
@@ -349,19 +344,6 @@ func StringTuple(c interface{}) string {
 	return fmt.Sprintf("(%s)", strings.Join(stringSlice, ","))
 }
 
-// CSVHeaders creates a slice of headers from a struct
-func (c *Connection) CSVHeaders(v interface{}) []string {
-	structValue := reflect.ValueOf(v)
-	structType := structValue.Type()
-	numFields := structValue.NumField()
-	cols := make([]string, numFields)
-	for i := 0; i < numFields; i++ {
-		f := structType.Field(i)
-		cols[i] = f.Tag.Get("db")
-	}
-	return cols
-}
-
 // ToSnakeCase conerts to snakecase
 func ToSnakeCase(str string) string {
 	var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
@@ -438,6 +420,10 @@ func TableName(c interface{}) string {
 func StructHeaders(v interface{}) []string {
 	structValue := reflect.ValueOf(v)
 	structType := structValue.Type()
+	if structValue.Kind() == reflect.Ptr {
+		structType = structType.Elem()
+		structValue = structValue.Elem()
+	}
 	numFields := structValue.NumField()
 	cols := make([]string, numFields)
 	for i := 0; i < numFields; i++ {
@@ -469,7 +455,7 @@ func createSchemaSlice(model *Model) string {
 			newModel = &Model{Value: val.Addr().Interface()}
 		}
 		cols := newModel.ToColumns()
-		if len(columns) == 0 {
+		if len(columns) == 0 { // has the first column passed through?
 			for i, c := range cols {
 				columns[c.Name] = c
 				order[i] = c.Name
