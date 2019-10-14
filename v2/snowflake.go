@@ -71,6 +71,6 @@ func (s *snowflake) CreateManyUpdate(db DBInterface, model *Model) error {
 	return errors.Wrap(genericCreateManyUpdate(db, model), "snowflake create update many")
 }
 
-func (ms *snowflake) Truncate(db DBInterface, model *Model) error {
+func (s *snowflake) Truncate(db DBInterface, model *Model) error {
 	return errors.Wrap(genericTruncate(db, model), "snowflake truncate")
 }

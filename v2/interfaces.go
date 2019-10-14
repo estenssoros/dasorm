@@ -5,6 +5,7 @@ import (
 	"database/sql"
 )
 
+// DBInterface interface for our database operations
 type DBInterface interface {
 	Debug() bool
 	SetDebug(bool)

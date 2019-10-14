@@ -17,6 +17,7 @@ type DB struct {
 	debug bool
 }
 
+// SetDebug sets the debug option
 func (d *DB) SetDebug(debug bool) {
 	d.debug = debug
 }
