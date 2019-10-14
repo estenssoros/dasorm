@@ -10,9 +10,6 @@ func connectMySQL(creds *Config) (*Connection, error) {
 	connectionURL := fmt.Sprintf("%s:%s@(%s)/%s?parseTime=true", creds.User, creds.Password, creds.Host, creds.Database)
 	db, err := connectURL(mysqlDialect, connectionURL)
 	if err != nil {
-		if isErrUknownDriver(err) {
-			return nil, driverWrapErr(mysqlDialect)
-		}
 		return nil, errors.Wrap(err, "connect mysql")
 	}
 	return &Connection{
