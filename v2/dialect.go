@@ -10,6 +10,14 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+var (
+	mysqlDialect     = "mysql"
+	postgresDialect  = "postgres"
+	mssqlDialect     = "microsoft_sql"
+	snowflakeDialect = "snowflake"
+	odbcDialect      = "odbc"
+)
+
 type dialect interface {
 	Name() string
 	TranslateSQL(string) string

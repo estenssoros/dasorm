@@ -22,22 +22,6 @@ func (c Config) String() string {
 	return string(ju)
 }
 
-var (
-	mysqlDialect     = "mysql"
-	postgresDialect  = "postgres"
-	mssqlDialect     = "microsoft_sql"
-	snowflakeDialect = "snowflake"
-	odbcDialect      = "odbc"
-)
-
-var (
-	mysqlDriver     = `_ "github.com/go-sql-driver/mysql" `
-	postgresDriver  = `_ "github.com/lib/pq"`
-	mssQLDriver     = `_ "github.com/denisenkom/go-mssqldb"`
-	snowflakeDriver = `_ "github.com/snowflakedb/gosnowflake"`
-	odbcDriver      = `_ "github.com/alexbrainman/odbc"`
-)
-
 func driverWrapErr(dialect string) error {
 	stmt := "add import statement: %s"
 	switch dialect {
