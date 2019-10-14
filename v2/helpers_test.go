@@ -1,7 +1,9 @@
 package dasorm
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -10,16 +12,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
-
-type TestStruct struct {
-	ID        uuid.UUID `db:"id"`
-	Name      string    `db:"name"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-	AnInt     int       `db:"an_int"`
-	AFloat    float64   `db:"a_float"`
-	ABool     bool      `db:"a_bool"`
-}
 
 var (
 	testUUID   = uuid.Must(uuid.FromString("86f65f0c-0320-461b-9047-6303d79db43d"))
@@ -34,9 +26,24 @@ func init() {
 	}
 }
 
-func (t *TestStruct) TableName() string {
+type TestStruct struct {
+	ID        uuid.UUID `db:"id"`
+	Name      string    `db:"name" filter:"asdf"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+	AnInt     int       `db:"an_int"`
+	AFloat    float64   `db:"a_float"`
+	ABool     bool      `db:"a_bool"`
+}
+
+func (t TestStruct) TableName() string {
 	return `test`
 }
+
+func (t TestStruct) SQLView() string {
+	return `howdy {name}`
+}
+
 func NewTestStruct() *TestStruct {
 	return &TestStruct{
 		ID:        testUUID,
@@ -46,6 +53,45 @@ func NewTestStruct() *TestStruct {
 		AnInt:     7,
 		AFloat:    7.0,
 		ABool:     true,
+	}
+}
+func (t TestStruct) String() string {
+	ju, _ := json.Marshal(t)
+	return string(ju)
+}
+
+func NewTestSlice() []*TestStruct {
+	slice := make([]*TestStruct, 5)
+	for i := 0; i < 5; i++ {
+		slice[i] = NewTestStruct()
+	}
+	return slice
+}
+
+type TestNullsStruct struct {
+	Name      nulls.String  `db:"name"`
+	CreatedAt nulls.Time    `db:"created_at"`
+	Abool     nulls.Bool    `db:"abool"`
+	AFloat    nulls.Float64 `db:"a_float"`
+	AnInt     nulls.Int     `db:"an_int"`
+}
+
+func NewNullsStruct() *TestNullsStruct {
+	return &TestNullsStruct{
+		Name:      nulls.NewString("asdf"),
+		CreatedAt: nulls.NewTime(testTime),
+		Abool:     nulls.NewBool(true),
+		AFloat:    nulls.NewFloat64(7.0),
+		AnInt:     nulls.NewInt(7),
+	}
+}
+func NewNullsStructNull() *TestNullsStruct {
+	return &TestNullsStruct{
+		Name:      nulls.String{},
+		CreatedAt: nulls.Time{},
+		Abool:     nulls.Bool{},
+		AFloat:    nulls.Float64{},
+		AnInt:     nulls.Int{},
 	}
 }
 
@@ -144,6 +190,28 @@ func TestCSVHeaders(t *testing.T) {
 		"a_bool",
 	}
 	haveHeaders := CSVHeaders(m)
+	if want, have := len(wantHeaders), len(haveHeaders); want != have {
+		t.Errorf("have: %d, want: %d", want, have)
+	}
+	for i := 0; i < len(haveHeaders); i++ {
+		if want, have := wantHeaders[i], haveHeaders[i]; want != have {
+			t.Errorf("have: %s, want: %s", want, have)
+		}
+	}
+}
+func TestCSVHeadersConnection(t *testing.T) {
+	m := NewTestStruct()
+	wantHeaders := []string{
+		"id",
+		"name",
+		"created_at",
+		"updated_at",
+		"an_int",
+		"a_float",
+		"a_bool",
+	}
+	c := &Connection{}
+	haveHeaders := c.CSVHeaders(m)
 	if want, have := len(wantHeaders), len(haveHeaders); want != have {
 		t.Errorf("have: %d, want: %d", want, have)
 	}
@@ -297,4 +365,106 @@ func TestDecodeSlice(t *testing.T) {
 	assert.Equal(t, t002.ID, id)
 	assert.Equal(t, t002.Value, 131234.4321)
 	assert.Equal(t, t002.Abool, true)
+}
+
+func TestStringSliceFilter(t *testing.T) {
+	ts := NewTestStruct()
+	{
+		ss := StringSliceFilter(ts, "filter")
+		assert.Equal(t, 1, len(ss))
+	}
+	{
+		ss := StringSliceFilter(ts, nil)
+		assert.Equal(t, 7, len(ss))
+	}
+}
+
+func TestStringTupleNull(t *testing.T) {
+	{
+		ts := NewNullsStruct()
+		st := StringTuple(ts)
+		assert.Equal(t, fmt.Sprintf("('asdf','%s',1,7,7)", testTime.Format(timeFmt)), st)
+	}
+	{
+		ts := NewNullsStruct()
+		ts.Abool = nulls.NewBool(false)
+		st := StringTuple(ts)
+		assert.Equal(t, fmt.Sprintf("('asdf','%s',0,7,7)", testTime.Format(timeFmt)), st)
+	}
+	{
+		ts := NewNullsStruct()
+		ts.AFloat = nulls.NewFloat64(math.NaN())
+		st := StringTuple(ts)
+		assert.Equal(t, fmt.Sprintf("('asdf','%s',1,NULL,7)", testTime.Format(timeFmt)), st)
+	}
+	{
+		ts := NewNullsStructNull()
+		st := StringTuple(ts)
+		assert.Equal(t, "(NULL,NULL,NULL,NULL,NULL)", st)
+	}
+}
+func TestColumns(t *testing.T) {
+	ts := NewTestStruct()
+	cs := Columns(ts)
+	assert.Equal(t, []string{"id", "name", "created_at", "updated_at", "an_int", "a_float", "a_bool"}, cs)
+}
+
+func TestStructHeaders(t *testing.T) {
+	ts := NewTestStruct()
+	assert.Equal(t, []string{"ID", "Name", "CreatedAt", "UpdatedAt", "AnInt", "AFloat", "ABool"}, StructHeaders(ts))
+
+}
+
+func TestTableName(t *testing.T) {
+	ts := NewTestStruct()
+	assert.Equal(t, "test", TableName(ts))
+}
+
+var schema = "\"ID\" VARCHAR(54)\n, \"NAME\" VARCHAR(6)\n, \"CREATED_AT\" DATETIME\n, \"UPDATED_AT\" DATETIME\n, \"AN_INT\" INTEGER\n, \"A_FLOAT\" FLOAT\n, \"A_BOOL\" BOOLEAN"
+
+func TestCreateSchemaSlice(t *testing.T) {
+	ts := NewTestSlice()
+	assert.Equal(t, schema, createSchemaSlice(&Model{ts}))
+	assert.Equal(t, schema, CreateSchema(ts))
+	nonPointers := make([]TestStruct, len(ts))
+	for i, _t := range ts {
+		nonPointers[i] = *_t
+	}
+	assert.Equal(t, schema, createSchemaSlice(&Model{nonPointers}))
+}
+
+func TestCreateSchemaSingleton(t *testing.T) {
+	ts := NewTestStruct()
+	assert.Equal(t, schema, createSchemaSingleton(&Model{ts}))
+	assert.Equal(t, schema, CreateSchema(ts))
+}
+
+func TestToTuples(t *testing.T) {
+	ts := NewTestSlice()
+	tuples, err := ToTuples(ts)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, len(ts), len(tuples))
+	noPointers := make([]TestStruct, len(ts))
+	for i, _t := range ts {
+		noPointers[i] = *_t
+	}
+	tuples, err = ToTuples(noPointers)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, len(noPointers), len(tuples))
+}
+
+var snakeCaseTests = []struct {
+	in  string
+	out string
+}{
+	{"asdf", "asdf"},
+	{"ASDF", "asdf"},
+	{"AsDf", "as_df"},
+}
+
+func TestToSnakeCase(t *testing.T) {
+	for _, tt := range snakeCaseTests {
+		have := ToSnakeCase(tt.in)
+		assert.Equal(t, have, tt.out)
+	}
 }
