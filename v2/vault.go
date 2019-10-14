@@ -88,7 +88,6 @@ func getConfigVault(environment string) (*Config, error) {
 	for i := 0; i < configVals.NumField(); i++ {
 		f := configType.Field(i)
 		tagName := f.Tag.Get("vault")
-		fmt.Println(tagName)
 		if tagName == "" {
 			return nil, errors.Errorf("unknown field in vault config: %s", f.Name)
 		}
@@ -99,7 +98,6 @@ func getConfigVault(environment string) (*Config, error) {
 		}
 		configVals.Field(i).SetString(val.(string))
 	}
-	fmt.Println(config)
 	return config, nil
 }
 
