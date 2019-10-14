@@ -30,6 +30,32 @@ var (
 	odbcDialect      = "odbc"
 )
 
+var (
+	mysqlDriver     = `_ "github.com/go-sql-driver/mysql" `
+	postgresDriver  = `_ "github.com/lib/pq"`
+	mssQLDriver     = `_ "github.com/denisenkom/go-mssqldb"`
+	snowflakeDriver = `_ "github.com/snowflakedb/gosnowflake"`
+	odbcDriver      = `_ "github.com/alexbrainman/odbc"`
+)
+
+func driverWrapErr(dialect string) error {
+	stmt := "add import statement: %s"
+	switch dialect {
+	case mysqlDialect:
+		return errors.Errorf(stmt, mysqlDriver)
+	case postgresDialect:
+		return errors.Errorf(stmt, postgresDriver)
+	case mssqlDialect:
+		return errors.Errorf(stmt, mssQLDriver)
+	case snowflakeDialect:
+		return errors.Errorf(stmt, snowflakeDriver)
+	case odbcDialect:
+		return errors.Errorf(stmt, odbcDriver)
+	default:
+		return errors.Errorf("unknown driver; %s", dialect)
+	}
+}
+
 // ConnectDBConfig connects to db given config
 func ConnectDBConfig(config *Config) (*Connection, error) {
 	switch config.Dialect {
