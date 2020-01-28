@@ -24,7 +24,7 @@ func (c *Connection) First(model interface{}) error {
 func (q *Query) First(model interface{}) error {
 	q.Limit(1)
 	m := &Model{Value: model}
-	if err := q.Connection.Dialect.SelectOne(q.Connection.DB, m, *q); err != nil {
+	if err := q.Connection.Dialect.SelectOne(q.Connection, m, *q); err != nil {
 		return err
 	}
 	return nil
@@ -144,7 +144,7 @@ func (c *Connection) All(models interface{}) error {
 //	q.Where("name = ?", "mark").All(&[]User{})
 func (q *Query) All(models interface{}) error {
 	m := &Model{Value: models}
-	if err := q.Connection.Dialect.SelectMany(q.Connection.DB, m, *q); err != nil {
+	if err := q.Connection.Dialect.SelectMany(q.Connection, m, *q); err != nil {
 		return err
 	}
 	return nil
@@ -154,7 +154,7 @@ func (q *Query) All(models interface{}) error {
 func (c *Connection) Create(model interface{}) error {
 	sm := &Model{Value: model}
 	return sm.iterate(func(m *Model) error {
-		if err := c.Dialect.Create(c.DB, m); err != nil {
+		if err := c.Dialect.Create(c, m); err != nil {
 			return err
 		}
 		return nil
@@ -164,7 +164,7 @@ func (c *Connection) Create(model interface{}) error {
 // CreateMany inserts a new model or slice of models
 func (c *Connection) CreateMany(model interface{}) error {
 	sm := &Model{Value: model}
-	if err := c.Dialect.CreateMany(c.DB, sm); err != nil {
+	if err := c.Dialect.CreateMany(c, sm); err != nil {
 		return err
 	}
 	return nil
@@ -174,7 +174,7 @@ func (c *Connection) CreateMany(model interface{}) error {
 func (c *Connection) Destroy(model interface{}) error {
 	sm := &Model{Value: model}
 	return sm.iterate(func(m *Model) error {
-		if err := c.Dialect.Destroy(c.DB, m); err != nil {
+		if err := c.Dialect.Destroy(c, m); err != nil {
 			return err
 		}
 		return nil
@@ -184,7 +184,7 @@ func (c *Connection) Destroy(model interface{}) error {
 // DestroyMany deletes many entries from a database
 func (c *Connection) DestroyMany(models interface{}) error {
 	m := &Model{Value: models}
-	if err := c.Dialect.DestroyMany(c.DB, m); err != nil {
+	if err := c.Dialect.DestroyMany(c, m); err != nil {
 		return err
 	}
 	return nil
@@ -196,7 +196,7 @@ func (c *Connection) Update(model interface{}) error {
 	return sm.iterate(func(m *Model) error {
 		var err error
 		m.touchUpdatedAt()
-		if err = c.Dialect.Update(c.DB, m); err != nil {
+		if err = c.Dialect.Update(c, m); err != nil {
 			return err
 		}
 		return nil
@@ -206,7 +206,7 @@ func (c *Connection) Update(model interface{}) error {
 // SQLView performs the sql view query on a model
 func (c *Connection) SQLView(model interface{}, format map[string]string) error {
 	m := &Model{Value: model}
-	if err := c.Dialect.SQLView(c.DB, m, format); err != nil {
+	if err := c.Dialect.SQLView(c, m, format); err != nil {
 		return err
 	}
 	return nil
@@ -215,7 +215,7 @@ func (c *Connection) SQLView(model interface{}, format map[string]string) error 
 // CreateManyUpdate creates or updates
 func (c *Connection) CreateManyUpdate(model interface{}) error {
 	m := &Model{Value: model}
-	if err := c.Dialect.CreateManyUpdate(c.DB, m); err != nil {
+	if err := c.Dialect.CreateManyUpdate(c, m); err != nil {
 		return err
 	}
 	return nil
@@ -224,7 +224,7 @@ func (c *Connection) CreateManyUpdate(model interface{}) error {
 // CreateUpdate creates or updates
 func (c *Connection) CreateUpdate(model interface{}) error {
 	m := &Model{Value: model}
-	if err := c.Dialect.CreateUpdate(c.DB, m); err != nil {
+	if err := c.Dialect.CreateUpdate(c, m); err != nil {
 		return err
 	}
 	return nil
@@ -233,7 +233,7 @@ func (c *Connection) CreateUpdate(model interface{}) error {
 // CreateManyTemp creates models in a temporary table
 func (c *Connection) CreateManyTemp(model interface{}) error {
 	m := &Model{Value: model}
-	if err := c.Dialect.CreateManyTemp(c.DB, m); err != nil {
+	if err := c.Dialect.CreateManyTemp(c, m); err != nil {
 		return err
 	}
 	return nil

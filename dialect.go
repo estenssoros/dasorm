@@ -10,22 +10,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-type dialect interface {
-	Name() string
-	TranslateSQL(string) string
-	Create(*DB, *Model) error
-	CreateUpdate(*DB, *Model) error
-	CreateMany(*DB, *Model) error
-	CreateManyTemp(*DB, *Model) error
-	CreateManyUpdate(*DB, *Model) error
-	Update(*DB, *Model) error
-	Destroy(*DB, *Model) error
-	DestroyMany(*DB, *Model) error
-	SelectOne(*DB, *Model, Query) error
-	SelectMany(*DB, *Model, Query) error
-	SQLView(*DB, *Model, map[string]string) error
-}
-
 func craftCreate(model *Model) string {
 	model.setID(uuid.Must(uuid.NewV4()))
 	model.touchCreatedAt()
@@ -33,18 +17,15 @@ func craftCreate(model *Model) string {
 	return InsertStmt(model.Value) + StringTuple(model.Value)
 }
 
-func genericExec(db *DB, stmt string) error {
-	if db.Debug {
-		fmt.Println(stmt)
-	}
-	if _, err := db.Exec(stmt); err != nil {
+func genericExec(conn *Connection, stmt string) error {
+	if err := conn.Exec(stmt); err != nil {
 		return errors.WithStack(err)
 	}
 	return nil
 }
 
-func genericCreate(db *DB, model *Model) error {
-	return genericExec(db, craftCreate(model))
+func genericCreate(conn *Connection, model *Model) error {
+	return genericExec(conn, craftCreate(model))
 }
 
 func craftCreateMany(model *Model) (string, error) {
@@ -55,24 +36,21 @@ func craftCreateMany(model *Model) (string, error) {
 	return InsertStmt(model.Value) + strings.Join(tuples, ","), nil
 }
 
-func genericCreateMany(db *DB, model *Model) error {
+func genericCreateMany(conn *Connection, model *Model) error {
 	query, err := craftCreateMany(model)
 	if err != nil {
 		return err
 	}
-	return genericExec(db, query)
+	return genericExec(conn, query)
 }
 
 func craftUpdate(model *Model) string {
 	return fmt.Sprintf("UPDATE %s SET %s WHERE %s", model.TableName(), model.UpdateString(), model.whereID())
 }
 
-func genericUpdate(db *DB, model *Model) error {
+func genericUpdate(conn *Connection, model *Model) error {
 	stmt := craftUpdate(model)
-	if db.Debug {
-		fmt.Println(stmt)
-	}
-	res, err := db.NamedExec(stmt, model.Value)
+	res, err := conn.DB.NamedExec(stmt, model.Value)
 	if err != nil {
 		return errors.Wrap(err, "updating record")
 	}
@@ -86,8 +64,8 @@ func craftDestroy(model *Model) string {
 	return fmt.Sprintf("DELETE FROM %s WHERE %s", model.TableName(), model.whereID())
 }
 
-func genericDestroy(db *DB, model *Model) error {
-	return genericExec(db, craftDestroy(model))
+func genericDestroy(conn *Connection, model *Model) error {
+	return genericExec(conn, craftDestroy(model))
 }
 
 func craftDestroyMany(model *Model) (string, error) {
@@ -117,31 +95,25 @@ func craftDestroyMany(model *Model) (string, error) {
 	return fmt.Sprintf("DELETE FROM %s WHERE id IN (%s)", model.TableName(), strings.Join(ids, ",")), nil
 }
 
-func genericDestroyMany(db *DB, model *Model) error {
+func genericDestroyMany(conn *Connection, model *Model) error {
 	query, err := craftDestroyMany(model)
 	if err != nil {
 		return errors.Wrap(err, "craft destroy many")
 	}
-	return genericExec(db, query)
+	return genericExec(conn, query)
 }
 
-func genericSelectOne(db *DB, model *Model, query Query) error {
+func genericSelectOne(conn *Connection, model *Model, query Query) error {
 	sql, args := query.ToSQL(model)
-	if db.Debug {
-		fmt.Println(sql)
-	}
-	if err := db.Get(model.Value, sql, args...); err != nil {
+	if err := conn.DB.Get(model.Value, sql, args...); err != nil {
 		return err
 	}
 	return nil
 }
 
-func genericSelectMany(db *DB, models *Model, query Query) error {
+func genericSelectMany(conn *Connection, models *Model, query Query) error {
 	sql, args := query.ToSQL(models)
-	if db.Debug {
-		fmt.Println(sql)
-	}
-	if err := db.Select(models.Value, sql, args...); err != nil {
+	if err := conn.DB.Select(models.Value, sql, args...); err != nil {
 		return err
 	}
 	return nil
@@ -166,20 +138,17 @@ func craftSQLView(model *Model, format map[string]string) (string, error) {
 	return sql, nil
 }
 
-func genericSQLView(db *DB, model *Model, format map[string]string) error {
+func genericSQLView(conn *Connection, model *Model, format map[string]string) error {
 	sql, err := craftSQLView(model, format)
 	if err != nil {
 		return err
 	}
-	if db.Debug {
-		fmt.Println(sql)
-	}
 	if model.isSlice() {
-		if err := db.Select(model.Value, sql); err != nil {
+		if err := conn.DB.Select(model.Value, sql); err != nil {
 			return err
 		}
 	} else {
-		if err := db.Get(model.Value, sql); err != nil {
+		if err := conn.DB.Get(model.Value, sql); err != nil {
 			return err
 		}
 	}
@@ -193,8 +162,8 @@ func craftCreateUpdate(model *Model) string {
 	return InsertStmt(model.Value) + StringTuple(model.Value) + model.DuplicateStmt()
 }
 
-func genericCreateUpdate(db *DB, model *Model) error {
-	return genericExec(db, craftCreateUpdate(model))
+func genericCreateUpdate(conn *Connection, model *Model) error {
+	return genericExec(conn, craftCreateUpdate(model))
 }
 
 func craftCreateManyUpdate(model *Model) (string, error) {
@@ -205,12 +174,12 @@ func craftCreateManyUpdate(model *Model) (string, error) {
 	return InsertStmt(model.Value) + strings.Join(tuples, ",") + model.DuplicateStmt(), nil
 }
 
-func genericCreateManyUpdate(db *DB, model *Model) error {
+func genericCreateManyUpdate(conn *Connection, model *Model) error {
 	query, err := craftCreateManyUpdate(model)
 	if err != nil {
 		return err
 	}
-	return genericExec(db, query)
+	return genericExec(conn, query)
 }
 
 func craftCreateManyTemp(model *Model) (string, error) {
@@ -221,10 +190,10 @@ func craftCreateManyTemp(model *Model) (string, error) {
 	return InsertTempStmt(model.Value) + strings.Join(tuples, ","), nil
 }
 
-func genericCreateManyTemp(db *DB, model *Model) error {
+func genericCreateManyTemp(conn *Connection, model *Model) error {
 	query, err := craftCreateManyTemp(model)
 	if err != nil {
 		return err
 	}
-	return genericExec(db, query)
+	return genericExec(conn, query)
 }

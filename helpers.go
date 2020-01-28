@@ -162,7 +162,7 @@ func FieldToString(v reflect.Value, fType int) string {
 		return "NULL"
 	case NullsStringType:
 		if v := i.(nulls.String); v.Valid {
-			return fmt.Sprintf("%s", v.String)
+			return v.String
 		}
 		return "NULL"
 	case NullsFloatType:
@@ -369,10 +369,6 @@ func ToSnakeCase(str string) string {
 	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
-}
-
-type table interface {
-	TableName() string
 }
 
 // Scanner returns an slice of interface to a struct

@@ -114,10 +114,10 @@ func TestStringTuple(t *testing.T) {
 func TestStringSlice(t *testing.T) {
 	m := NewTestStruct()
 	wantSlice := []string{
-		fmt.Sprintf("%s", testUUID.String()),
+		testUUID.String(),
 		"asdf",
-		fmt.Sprintf("%s", testTime.Format(timeFmt)),
-		fmt.Sprintf("%s", testTime.Format(timeFmt)),
+		testTime.Format(timeFmt),
+		testTime.Format(timeFmt),
 		"7",
 		"7.000000",
 		"true",
@@ -166,11 +166,11 @@ func TestEscapeString(t *testing.T) {
 
 func TestFieldTypeNulls(t *testing.T) {
 	test := struct {
-		I nulls.Int
-		S nulls.String
-		F nulls.Float64
-		T nulls.Time
-		B nulls.Bool
+		I nulls.Int     `db:"I"`
+		S nulls.String  `db:"S"`
+		F nulls.Float64 `db:"F"`
+		T nulls.Time    `db:"T"`
+		B nulls.Bool    `db:"B"`
 	}{
 		I: nulls.Int{},
 		S: nulls.String{},
@@ -178,8 +178,14 @@ func TestFieldTypeNulls(t *testing.T) {
 		T: nulls.Time{},
 		B: nulls.Bool{},
 	}
-	have := StringSlice(test)
-	assert.Equal(t, []string{"NULL", "NULL", "NULL", "NULL", "NULL"}, have)
+	{
+		have := StringSlice(test)
+		assert.Equal(t, []string{"NULL", "NULL", "NULL", "NULL", "NULL"}, have)
+	}
+	{
+		have := StringTuple(test)
+		assert.Equal(t, "(NULL,NULL,NULL,NULL,NULL)", have)
+	}
 }
 
 func TestFieldTypeNullsValid(t *testing.T) {

@@ -18,7 +18,7 @@ func connectSnowflake(creds *Config) (*Connection, error) {
 		return nil, err
 	}
 	return &Connection{
-		DB:      &DB{DB: db},
+		DB:      db,
 		Dialect: &snowflake{},
 	}, nil
 }
@@ -33,45 +33,45 @@ func (s *snowflake) TranslateSQL(sql string) string {
 	return sql
 }
 
-func (s *snowflake) Create(db *DB, model *Model) error {
-	return errors.Wrap(genericCreate(db, model), "snowflake create")
+func (s *snowflake) Create(conn *Connection, model *Model) error {
+	return errors.Wrap(genericCreate(conn, model), "snowflake create")
 }
 
-func (s *snowflake) CreateMany(db *DB, model *Model) error {
-	return errors.Wrap(genericCreateMany(db, model), "snowflake create")
+func (s *snowflake) CreateMany(conn *Connection, model *Model) error {
+	return errors.Wrap(genericCreateMany(conn, model), "snowflake create")
 }
 
-func (s *snowflake) Update(db *DB, model *Model) error {
-	return errors.Wrap(genericUpdate(db, model), "snowflake update")
+func (s *snowflake) Update(conn *Connection, model *Model) error {
+	return errors.Wrap(genericUpdate(conn, model), "snowflake update")
 }
 
-func (s *snowflake) Destroy(db *DB, model *Model) error {
-	return errors.Wrap(genericDestroy(db, model), "snowflake destroy")
+func (s *snowflake) Destroy(conn *Connection, model *Model) error {
+	return errors.Wrap(genericDestroy(conn, model), "snowflake destroy")
 }
 
-func (s *snowflake) DestroyMany(db *DB, model *Model) error {
-	return errors.Wrap(genericDestroyMany(db, model), "snowflake destroy many")
+func (s *snowflake) DestroyMany(conn *Connection, model *Model) error {
+	return errors.Wrap(genericDestroyMany(conn, model), "snowflake destroy many")
 }
 
-func (s *snowflake) SelectOne(db *DB, model *Model, query Query) error {
-	return errors.Wrap(genericSelectOne(db, model, query), "snowflake select one")
+func (s *snowflake) SelectOne(conn *Connection, model *Model, query Query) error {
+	return errors.Wrap(genericSelectOne(conn, model, query), "snowflake select one")
 }
 
-func (s *snowflake) SelectMany(db *DB, models *Model, query Query) error {
-	return errors.Wrap(genericSelectMany(db, models, query), "snowflake select many")
+func (s *snowflake) SelectMany(conn *Connection, models *Model, query Query) error {
+	return errors.Wrap(genericSelectMany(conn, models, query), "snowflake select many")
 }
 
-func (s *snowflake) SQLView(db *DB, model *Model, format map[string]string) error {
-	return errors.Wrap(genericSQLView(db, model, format), "snowflake sql view")
+func (s *snowflake) SQLView(conn *Connection, model *Model, format map[string]string) error {
+	return errors.Wrap(genericSQLView(conn, model, format), "snowflake sql view")
 }
 
-func (s *snowflake) CreateUpdate(db *DB, model *Model) error {
-	return errors.Wrap(genericCreateUpdate(db, model), "snowflake create update")
+func (s *snowflake) CreateUpdate(conn *Connection, model *Model) error {
+	return errors.Wrap(genericCreateUpdate(conn, model), "snowflake create update")
 }
-func (s *snowflake) CreateManyTemp(db *DB, model *Model) error {
-	return errors.Wrap(genericCreateManyTemp(db, model), "snowflake create many temp")
+func (s *snowflake) CreateManyTemp(conn *Connection, model *Model) error {
+	return errors.Wrap(genericCreateManyTemp(conn, model), "snowflake create many temp")
 }
 
-func (s *snowflake) CreateManyUpdate(db *DB, model *Model) error {
-	return errors.Wrap(genericCreateManyUpdate(db, model), "snowflake create update many")
+func (s *snowflake) CreateManyUpdate(conn *Connection, model *Model) error {
+	return errors.Wrap(genericCreateManyUpdate(conn, model), "snowflake create update many")
 }

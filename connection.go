@@ -7,20 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
-// DB waraps sqlx.DB
-type DB struct {
-	*sqlx.DB
-	Debug bool
-}
-
 // Connection holds a pointer to the database connection
 type Connection struct {
-	DB      *DB
+	DB      DBInterface
 	Dialect dialect
+	debug   bool
 }
 
 // Close wraps db.close
@@ -30,7 +24,7 @@ func (c *Connection) Close() {
 
 // Debug sets the db to debug
 func (c *Connection) Debug(d bool) {
-	c.DB.Debug = d
+	c.debug = d
 }
 
 // Config holds database information
@@ -41,6 +35,22 @@ type Config struct {
 	Port     string `vault:"port"`
 	User     string `vault:"user"`
 	Password string `vault:"password"`
+}
+
+func (c *Config) mysqlURL() string {
+	return fmt.Sprintf("%s:%s@(%s)/%s?parseTime=true", c.User, c.Password, c.Host, c.Database)
+}
+
+func (c *Config) mssqlURL() string {
+	return fmt.Sprintf("sqlserver://%s:%s@%s?database=%s", c.User, c.Password, c.Host, c.Database)
+}
+
+func (c *Config) postgresURL() string {
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", c.Host, c.Port, c.User, c.Password, c.Database)
+}
+
+func (c *Config) snowflakeURL() string {
+	return fmt.Sprintf("%s:%s@%s/%s", c.User, c.Password, c.Host, c.Database)
 }
 
 // ConnectDBConfig connects to db given config
@@ -54,6 +64,8 @@ func ConnectDBConfig(config *Config) (*Connection, error) {
 		return connectMSSQL(config)
 	case "snowflake":
 		return connectSnowflake(config)
+	case "mock":
+		return connectMock(config)
 	default:
 		return nil, fmt.Errorf("%s dialect not recognized", config.Dialect)
 	}
@@ -150,13 +162,15 @@ func (c *Connection) QueryRow(query string, args ...interface{}) *sql.Row {
 }
 
 // ExecContext wraps the ExecContext method
-func (c *Connection) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	return c.DB.ExecContext(ctx, query, args...)
+func (c *Connection) ExecContext(ctx context.Context, query string, args ...interface{}) error {
+	_, err := c.DB.ExecContext(ctx, query, args...)
+	return err
 }
 
 // Exec wraps the ExecContext method
-func (c *Connection) Exec(query string, args ...interface{}) (sql.Result, error) {
-	return c.DB.Exec(query, args...)
+func (c *Connection) Exec(query string, args ...interface{}) error {
+	_, err := c.DB.Exec(query, args...)
+	return err
 }
 
 // WriteTuples writes tuples to database

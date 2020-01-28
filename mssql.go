@@ -1,16 +1,13 @@
 package dasorm
 
 import (
-	"fmt"
-
 	_ "github.com/denisenkom/go-mssqldb" //mssql
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
-func connectMSSQL(creds *Config) (*Connection, error) {
-	connectionURL := fmt.Sprintf("sqlserver://%s:%s@%s?database=%s", creds.User, creds.Password, creds.Host, creds.Database)
-	db, err := sqlx.Connect("mssql", connectionURL)
+func connectMSSQL(config *Config) (*Connection, error) {
+	db, err := sqlx.Connect("mssql", config.mssqlURL())
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +16,7 @@ func connectMSSQL(creds *Config) (*Connection, error) {
 		return nil, err
 	}
 	return &Connection{
-		DB:      &DB{DB: db},
+		DB:      db,
 		Dialect: &mssql{},
 	}, nil
 }
@@ -34,46 +31,46 @@ func (m *mssql) TranslateSQL(sql string) string {
 	return sql
 }
 
-func (m *mssql) Create(db *DB, model *Model) error {
-	return errors.Wrap(genericCreate(db, model), "mysql create")
+func (m *mssql) Create(conn *Connection, model *Model) error {
+	return errors.Wrap(genericCreate(conn, model), "mysql create")
 }
 
-func (m *mssql) CreateMany(db *DB, model *Model) error {
-	return errors.Wrap(genericCreateMany(db, model), "mssql create")
+func (m *mssql) CreateMany(conn *Connection, model *Model) error {
+	return errors.Wrap(genericCreateMany(conn, model), "mssql create")
 }
 
-func (m *mssql) Update(db *DB, model *Model) error {
-	return errors.Wrap(genericUpdate(db, model), "mssql update")
+func (m *mssql) Update(conn *Connection, model *Model) error {
+	return errors.Wrap(genericUpdate(conn, model), "mssql update")
 }
 
-func (m *mssql) Destroy(db *DB, model *Model) error {
-	return errors.Wrap(genericDestroy(db, model), "mssql destroy")
+func (m *mssql) Destroy(conn *Connection, model *Model) error {
+	return errors.Wrap(genericDestroy(conn, model), "mssql destroy")
 }
 
-func (m *mssql) DestroyMany(db *DB, model *Model) error {
-	return errors.Wrap(genericDestroyMany(db, model), "mssql destroy many")
+func (m *mssql) DestroyMany(conn *Connection, model *Model) error {
+	return errors.Wrap(genericDestroyMany(conn, model), "mssql destroy many")
 }
 
-func (m *mssql) SelectOne(db *DB, model *Model, query Query) error {
-	return errors.Wrap(genericSelectOne(db, model, query), "mssql select one")
+func (m *mssql) SelectOne(conn *Connection, model *Model, query Query) error {
+	return errors.Wrap(genericSelectOne(conn, model, query), "mssql select one")
 }
 
-func (m *mssql) SelectMany(db *DB, models *Model, query Query) error {
-	return errors.Wrap(genericSelectMany(db, models, query), "mssql select many")
+func (m *mssql) SelectMany(conn *Connection, models *Model, query Query) error {
+	return errors.Wrap(genericSelectMany(conn, models, query), "mssql select many")
 }
 
-func (m *mssql) SQLView(db *DB, models *Model, format map[string]string) error {
-	return errors.Wrap(genericSQLView(db, models, format), "mssql sql view")
+func (m *mssql) SQLView(conn *Connection, models *Model, format map[string]string) error {
+	return errors.Wrap(genericSQLView(conn, models, format), "mssql sql view")
 }
 
-func (m *mssql) CreateUpdate(*DB, *Model) error {
+func (m *mssql) CreateUpdate(*Connection, *Model) error {
 	return ErrNotImplemented
 }
 
-func (m *mssql) CreateManyTemp(*DB, *Model) error {
+func (m *mssql) CreateManyTemp(*Connection, *Model) error {
 	return ErrNotImplemented
 }
 
-func (m *mssql) CreateManyUpdate(*DB, *Model) error {
+func (m *mssql) CreateManyUpdate(*Connection, *Model) error {
 	return ErrNotImplemented
 }
