@@ -43,8 +43,26 @@ func genericExec(db *DB, stmt string) error {
 	return nil
 }
 
+func genericExecWithID(db *DB, stmt string) (int64, error) {
+	if db.Debug {
+		fmt.Println(stmt)
+	}
+	res, err := db.Exec(stmt)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+	if id, err := res.LastInsertId(); err != nil {
+		return id, nil
+	}
+	return 0, nil
+}
+
 func genericCreate(db *DB, model *Model) error {
-	return genericExec(db, craftCreate(model))
+	id, err := genericExecWithID(db, craftCreate(model))
+	if id != 0 {
+		model.setID(id)
+	}
+	return err
 }
 
 func craftCreateMany(model *Model) (string, error) {
