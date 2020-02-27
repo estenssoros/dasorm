@@ -73,6 +73,15 @@ func (c *Connection) Ping() error {
 	return c.DB.Ping()
 }
 
+// MockDB talks a sqlmock driver and returns a mock connection for testing
+func MockDB(db *sql.DB) *Connection {
+	mockDB := sqlx.NewDb(db, "sqlmock")
+	return &Connection{
+		DB:      &DB{mockDB, false},
+		Dialect: &mysql{},
+	}
+}
+
 // ConnectDB connects to a database environment
 func ConnectDB(server string) (*Connection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
