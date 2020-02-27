@@ -73,7 +73,7 @@ func (c *Connection) Ping() error {
 	return c.DB.Ping()
 }
 
-// MockDB talks a sqlmock driver and returns a mock connection for testing
+// MockDB takes a sql connection and returns a mock connection for testing
 func MockDB(db *sql.DB) *Connection {
 	mockDB := sqlx.NewDb(db, "sqlmock")
 	return &Connection{
