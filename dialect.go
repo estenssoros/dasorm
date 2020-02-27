@@ -51,7 +51,7 @@ func genericExecWithID(db *DB, stmt string) (int64, error) {
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
-	if id, err := res.LastInsertId(); err != nil {
+	if id, err := res.LastInsertId(); err == nil {
 		return id, nil
 	}
 	return 0, nil

@@ -131,6 +131,18 @@ func (m *Model) setID(i interface{}) {
 			}
 			return
 		}
+		if _, ok := fbn.Interface().(int); ok {
+			if id, ok := i.(int64); ok {
+				fbn.Set(reflect.ValueOf(int(id)))
+				return
+			}
+		}
+		if _, ok := fbn.Interface().(int64); ok {
+			if id, ok := i.(int64); ok {
+				fbn.Set(reflect.ValueOf(id))
+				return
+			}
+		}
 	}
 }
 
