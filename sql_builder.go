@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -111,25 +110,7 @@ func (sq *sqlBuilder) buildPaginationClauses(sql string) string {
 	return sql
 }
 
-var columnCache = map[string][]string{}
-var columnCacheMutex = sync.Mutex{}
-
 // buildColumns either caches or creates new columns for a table
 func (sq *sqlBuilder) buildColumns() []string {
-	tableName := sq.Model.TableName()
-
-	columnCacheMutex.Lock()
-	cols, ok := columnCache[tableName]
-	columnCacheMutex.Unlock()
-
-	if ok {
-		return cols
-	}
-
-	cols = sq.Model.ColumnSlice()
-	columnCacheMutex.Lock()
-	columnCache[tableName] = cols
-	columnCacheMutex.Unlock()
-
-	return cols
+	return sq.Model.ColumnSlice()
 }
