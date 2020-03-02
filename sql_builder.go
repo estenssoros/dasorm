@@ -64,12 +64,20 @@ func (sq *sqlBuilder) compile() {
 
 func (sq *sqlBuilder) buildSelectSQL() string {
 	cols := sq.buildColumns()
-
-	sql := fmt.Sprintf("SELECT %s FROM %s", strings.Join(cols, ","), sq.Model.TableName())
-	sql = sq.buildWhereClauses(sql)
-	sql = sq.buildOrderClauses(sql)
-	sql = sq.buildPaginationClauses(sql)
-
+	var sql string
+	switch sq.Query.Connection.DialectName() {
+	case "mssql":
+		sql = "SELECT "
+		sql = sq.buildPaginationClauses(sql)
+		sql += fmt.Sprintf("%s FROM %s", strings.Join(cols, ","), sq.Model.TableName())
+		sql = sq.buildWhereClauses(sql)
+		sql = sq.buildOrderClauses(sql)
+	default:
+		sql = fmt.Sprintf("SELECT %s FROM %s", strings.Join(cols, ","), sq.Model.TableName())
+		sql = sq.buildWhereClauses(sql)
+		sql = sq.buildOrderClauses(sql)
+		sql = sq.buildPaginationClauses(sql)
+	}
 	return sql
 }
 
@@ -93,7 +101,12 @@ func (sq *sqlBuilder) buildOrderClauses(sql string) string {
 
 func (sq *sqlBuilder) buildPaginationClauses(sql string) string {
 	if sq.Query.limitResults > 0 {
-		sql = fmt.Sprintf("%s LIMIT %d", sql, sq.Query.limitResults)
+		switch sq.Query.Connection.DialectName() {
+		case "mssql":
+			sql += fmt.Sprintf("TOP %d ", sq.Query.limitResults)
+		default:
+			sql = fmt.Sprintf("%s LIMIT %d", sql, sq.Query.limitResults)
+		}
 	}
 	return sql
 }
