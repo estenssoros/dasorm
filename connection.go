@@ -73,6 +73,28 @@ func (c *Connection) Ping() error {
 	return c.DB.Ping()
 }
 
+// MockDB takes a sql connection and dialect name, and returns a mock connection for testing
+func MockDB(db *sql.DB, dialectName string) *Connection {
+	var Dialect dialect
+	switch dialectName {
+	case "mysql":
+		Dialect = &mysql{}
+	case "postgres":
+		Dialect = &postgres{}
+	case "mssql":
+		Dialect = &mssql{}
+	case "snowflake":
+		Dialect = &snowflake{}
+	default:
+		Dialect = &mysql{}
+	}
+	mockDB := sqlx.NewDb(db, "sqlmock")
+	return &Connection{
+		DB:      &DB{mockDB, false},
+		Dialect: Dialect,
+	}
+}
+
 // ConnectDB connects to a database environment
 func ConnectDB(server string) (*Connection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
