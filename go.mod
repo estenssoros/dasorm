@@ -6,6 +6,7 @@ require (
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc // indirect
 	github.com/araddon/dateparse v0.0.0-20190622164848-0fb0a474d195
 	github.com/denisenkom/go-mssqldb v0.0.0-20190820223206-44cdfe8d8ba9
+	github.com/fatih/color v1.7.0
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/hashicorp/vault/api v1.0.4
