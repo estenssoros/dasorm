@@ -168,6 +168,11 @@ func (m *Model) touchUpdatedAt() {
 
 func (m *Model) whereID() string {
 	id := m.ID()
+	t := reflect.TypeOf(id)
+	switch t.Kind() {
+	case reflect.Int:
+		return fmt.Sprintf("id=%d", id)
+	}
 	return fmt.Sprintf("id='%s'", id)
 }
 
