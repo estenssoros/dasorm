@@ -5,10 +5,19 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/fatih/color"
 	interpol "github.com/imkira/go-interpol"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 )
+
+func printSQL(s string) {
+	breaks := strings.Split(s, "\n")
+	for i, b := range breaks {
+		breaks[i] = strings.TrimSpace(b)
+	}
+	color.Green(strings.Join(breaks, " "))
+}
 
 type dialect interface {
 	Name() string
@@ -35,7 +44,7 @@ func craftCreate(model *Model) string {
 
 func genericExec(db *DB, stmt string) error {
 	if db.Debug {
-		fmt.Println(stmt)
+		printSQL(stmt)
 	}
 	if _, err := db.Exec(stmt); err != nil {
 		return errors.WithStack(err)
@@ -45,7 +54,7 @@ func genericExec(db *DB, stmt string) error {
 
 func genericExecWithID(db *DB, stmt string) (int64, error) {
 	if db.Debug {
-		fmt.Println(stmt)
+		printSQL(stmt)
 	}
 	res, err := db.Exec(stmt)
 	if err != nil {
@@ -88,7 +97,7 @@ func craftUpdate(model *Model) string {
 func genericUpdate(db *DB, model *Model) error {
 	stmt := craftUpdate(model)
 	if db.Debug {
-		fmt.Println(stmt)
+		printSQL(stmt)
 	}
 	res, err := db.NamedExec(stmt, model.Value)
 	if err != nil {
@@ -146,7 +155,7 @@ func genericDestroyMany(db *DB, model *Model) error {
 func genericSelectOne(db *DB, model *Model, query Query) error {
 	sql, args := query.ToSQL(model)
 	if db.Debug {
-		fmt.Println(sql)
+		printSQL(sql)
 	}
 	if err := db.Get(model.Value, sql, args...); err != nil {
 		return err
@@ -157,7 +166,7 @@ func genericSelectOne(db *DB, model *Model, query Query) error {
 func genericSelectMany(db *DB, models *Model, query Query) error {
 	sql, args := query.ToSQL(models)
 	if db.Debug {
-		fmt.Println(sql)
+		printSQL(sql)
 	}
 	if err := db.Select(models.Value, sql, args...); err != nil {
 		return err
@@ -190,7 +199,7 @@ func genericSQLView(db *DB, model *Model, format map[string]string) error {
 		return err
 	}
 	if db.Debug {
-		fmt.Println(sql)
+		printSQL(sql)
 	}
 	if model.isSlice() {
 		if err := db.Select(model.Value, sql); err != nil {
