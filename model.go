@@ -167,13 +167,54 @@ func (m *Model) touchUpdatedAt() {
 }
 
 func (m *Model) whereID() string {
-	id := m.ID()
-	t := reflect.TypeOf(id)
-	switch t.Kind() {
-	case reflect.Int:
-		return fmt.Sprintf("id=%d", id)
+
+	{ //look for a primary key tag
+		obj := reflect.ValueOf(m.Value)
+		for {
+			if obj.Kind() == reflect.Ptr {
+				obj = obj.Elem()
+			} else {
+				break
+			}
+		}
+
+		v := reflect.ValueOf(obj.Interface())
+		t := reflect.TypeOf(obj.Interface())
+
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Field(i)
+			fieldType := t.Field(i)
+			if key, ok := fieldType.Tag.Lookup("dasorm_key"); ok {
+				if key == "primary" {
+					fieldName := fieldType.Name
+					if name, ok := fieldType.Tag.Lookup("db"); ok {
+						fieldName = name
+					}
+					val := field.Interface()
+					switch field.Kind() {
+					case reflect.Int:
+						return fmt.Sprintf("%s=%d", fieldName, val)
+					case reflect.TypeOf(nulls.Int{}).Kind():
+						return fmt.Sprintf("%s=%d", fieldName, val.(nulls.Int).Int)
+					case reflect.TypeOf(uuid.UUID{}).Kind():
+						return fmt.Sprintf("%s='%s'", fieldName, val.(uuid.UUID).String())
+					default:
+						return fmt.Sprintf("%s='%s'", fieldName, val)
+					}
+				}
+			}
+		}
 	}
-	return fmt.Sprintf("id='%s'", id)
+
+	{ //default, if there is not primary key tagged use an id, then panic if it doesn't exist
+		id := m.ID()
+		t := reflect.TypeOf(id)
+		switch t.Kind() {
+		case reflect.Int:
+			return fmt.Sprintf("id=%d", id)
+		}
+		return fmt.Sprintf("id='%s'", id)
+	}
 }
 
 func (m *Model) isSlice() bool {
