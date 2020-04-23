@@ -18,7 +18,6 @@ require (
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
-	github.com/sirupsen/logrus v1.2.0
 	github.com/snowflakedb/gosnowflake v1.3.0
 	github.com/stretchr/testify v1.3.0
 )
